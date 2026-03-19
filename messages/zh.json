@@ -1,0 +1,112 @@
+{
+  "Metadata": {
+    "title": "Sushi Maydo - 巴塞罗那日式餐厅",
+    "description": "日本传统与地中海优雅的邂逅。位于巴塞罗那 L'Hospitalet de Llobregat 的日式餐厅。"
+  },
+  "Nav": {
+    "home": "首页",
+    "menu": "菜单",
+    "order": "点餐",
+    "reservations": "预订",
+    "giftCard": "礼品卡",
+    "gallery": "画廊",
+    "contact": "联系",
+    "about": "关于",
+    "more": "更多",
+    "langSwitch": "ES"
+  },
+  "Hero": {
+    "sub": "巴塞罗那 L'Hospitalet de Llobregat",
+    "title": "MAYDO",
+    "tagline": "日本料理の芸術",
+    "desc": "日本传统与地中海优雅的邂逅",
+    "cta": "预订座位",
+    "cta2": "查看菜单",
+    "scroll": "SCROLL"
+  },
+  "About": {
+    "sub": "关于我们",
+    "title": "巴塞罗那的日本精髓",
+    "desc": "受传统风味的启发，MAYDO以全新创意诠释日本料理。每一次到访都是一场感官之旅，日本料理的精准工艺与地中海的温暖在此完美融合。",
+    "stat1": "8+",
+    "stat1Label": "年经验",
+    "stat2": "50+",
+    "stat2Label": "道菜品",
+    "stat3": "★ 4.5",
+    "stat3Label": "平均评分"
+  },
+  "Menu": {
+    "sub": "我们的菜单",
+    "title": "一场美食体验",
+    "desc": "每道菜都是一件艺术品，以最新鲜的食材和最精湛的技艺呈现",
+    "item1Title": "午间套餐",
+    "item1Desc": "精选自助，含寿司、刺身及热菜",
+    "item1Price": "17,90€",
+    "item1Time": "13:00 - 16:30",
+    "item2Title": "晚间套餐",
+    "item2Desc": "完整Omakase体验，时令食材呈现",
+    "item2Price": "29,90€",
+    "item2Time": "20:30 - 23:30",
+    "item3Title": "每日特选",
+    "item3Desc": "主厨当日精选，每天都有惊喜",
+    "item3Price": "14,90€",
+    "item3Time": "13:00 - 16:30"
+  },
+  "Quote": {
+    "text": "一顿精心准备的日本料理，有着需要在口中细细品味才能领悟的微妙滋味",
+    "author": "— MAYDO"
+  },
+  "Gallery": {
+    "sub": "画廊",
+    "title": "MAYDO 时刻"
+  },
+  "Reserve": {
+    "sub": "预订",
+    "title": "预订您的座位",
+    "desc": "让我们为您准备最好的用餐体验。请选择您偏好的日期和时间。",
+    "name": "您的姓名",
+    "email": "电子邮箱",
+    "phone": "联系电话",
+    "date": "日期",
+    "time": "时间",
+    "guests": "用餐人数",
+    "btn": "确认预订",
+    "note": "您将收到一封确认邮件"
+  },
+  "Footer": {
+    "tagline": "日本传统与地中海优雅的邂逅。",
+    "hours": "营业时间",
+    "hours1": "周二至周日",
+    "hours2": "13:00 - 16:30",
+    "hours3": "20:30 - 23:30",
+    "hours4": "周一休息",
+    "contact": "联系方式",
+    "location": "地址",
+    "address": "Pl. d'Europa, 102, 08902\nL'Hospitalet de Llobregat\n巴塞罗那",
+    "copyright": "© 2026 Sushi Maydo. All rights reserved.",
+    "order": "在线点餐",
+    "delivery": "外卖服务",
+    "giftCard": "礼品卡",
+    "about": "关于我们"
+  },
+  "Pages": {
+    "comingSoon": "即将上线",
+    "backHome": "返回首页",
+    "carta": "我们的菜单",
+    "cartaDesc": "探索我们精心准备的日式料理，以最新鲜的食材呈现。",
+    "pedido": "在线点餐",
+    "pedidoDesc": "在线下单，到店取餐。即将推出。",
+    "delivery": "外卖服务",
+    "deliveryDesc": "将正宗日式料理直接送到您家门口。",
+    "reservas": "预订座位",
+    "reservasDesc": "预订您的座位，让我们为您准备最好的用餐体验。",
+    "giftCard": "礼品卡",
+    "giftCardDesc": "送给日料爱好者的完美礼物。",
+    "galeria": "画廊",
+    "galeriaDesc": "用影像记录我们最特别的时刻。",
+    "contacto": "联系我们",
+    "contactoDesc": "如有任何问题，欢迎随时与我们联系。",
+    "sobre": "关于我们",
+    "sobreDesc": "了解 MAYDO 背后的故事与理念。"
+  }
+}

@@ -1,26 +1,42 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+@theme {
+  --color-maroon: #7A4242;
+  --color-maroon-dark: #5C2E2E;
+  --color-maroon-light: #8A5252;
+  --color-camel: #C9A87C;
+  --color-camel-light: #D4B896;
+  --color-cream: #FAF7F4;
+  --color-beige: #E0D5CE;
+  --color-ink: #1A1A1A;
+  --color-gray: #8A8A8A;
+
+  --font-heading: var(--font-cormorant), Georgia, serif;
+  --font-body: var(--font-zen-kaku), sans-serif;
+  --font-cjk: var(--font-noto-serif-sc), serif;
+
+  --animate-shimmer: shimmer 2.5s ease infinite;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+@keyframes shimmer {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 1; }
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+@layer base {
+  html {
+    scroll-behavior: smooth;
   }
-}
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  ::selection {
+    background: #7A4242;
+    color: #FFFFFF;
+  }
+
+  body {
+    background: #FAF7F4;
+    color: #1A1A1A;
+    font-family: var(--font-heading);
+    overflow-x: hidden;
+  }
 }

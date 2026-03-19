@@ -1,0 +1,112 @@
+{
+  "Metadata": {
+    "title": "Sushi Maydo - Restaurante Japonés en Barcelona",
+    "description": "Donde la tradición japonesa se encuentra con la elegancia mediterránea. Restaurante japonés en L'Hospitalet de Llobregat, Barcelona."
+  },
+  "Nav": {
+    "home": "Inicio",
+    "menu": "Carta",
+    "order": "Pedido",
+    "reservations": "Reservas",
+    "giftCard": "Gift Card",
+    "gallery": "Galería",
+    "contact": "Contacto",
+    "about": "Nosotros",
+    "more": "Más",
+    "langSwitch": "中文"
+  },
+  "Hero": {
+    "sub": "L'Hospitalet de Llobregat, Barcelona",
+    "title": "MAYDO",
+    "tagline": "日本料理の芸術",
+    "desc": "Donde la tradición japonesa se encuentra con la elegancia mediterránea",
+    "cta": "Reservar mesa",
+    "cta2": "Ver carta",
+    "scroll": "SCROLL"
+  },
+  "About": {
+    "sub": "Sobre nosotros",
+    "title": "La esencia de Japón en Barcelona",
+    "desc": "Inspirado en sabores tradicionales, MAYDO ofrece una interpretación fresca y creativa de la cocina japonesa. Cada visita es un viaje sensorial donde la precisión del arte culinario nipón se fusiona con la calidez del Mediterráneo.",
+    "stat1": "8+",
+    "stat1Label": "Años de experiencia",
+    "stat2": "50+",
+    "stat2Label": "Platos en carta",
+    "stat3": "★ 4.5",
+    "stat3Label": "Valoración media"
+  },
+  "Menu": {
+    "sub": "Nuestra carta",
+    "title": "Una experiencia culinaria",
+    "desc": "Cada plato es una obra de arte, preparado con los ingredientes más frescos y la técnica más refinada",
+    "item1Title": "Menú de mediodía",
+    "item1Desc": "Buffet libre con selección premium de sushi, sashimi y platos calientes",
+    "item1Price": "17,90€",
+    "item1Time": "13:00 - 16:30",
+    "item2Title": "Menú de noche",
+    "item2Desc": "Experiencia omakase completa con ingredientes de temporada",
+    "item2Price": "29,90€",
+    "item2Time": "20:30 - 23:30",
+    "item3Title": "Menú del día",
+    "item3Desc": "Selección especial del chef con sorpresas diarias",
+    "item3Price": "14,90€",
+    "item3Time": "13:00 - 16:30"
+  },
+  "Quote": {
+    "text": "Una comida japonesa bien preparada tiene sabores delicados que hay que retener en la boca para apreciarlos",
+    "author": "— MAYDO"
+  },
+  "Gallery": {
+    "sub": "Galería",
+    "title": "Momentos MAYDO"
+  },
+  "Reserve": {
+    "sub": "Reservas",
+    "title": "Reserve su mesa",
+    "desc": "Permítanos preparar la mejor experiencia para usted. Elija su fecha y horario preferido.",
+    "name": "Nombre completo",
+    "email": "Correo electrónico",
+    "phone": "Teléfono",
+    "date": "Fecha",
+    "time": "Hora",
+    "guests": "Número de personas",
+    "btn": "Confirmar reserva",
+    "note": "Recibirá una confirmación por correo electrónico"
+  },
+  "Footer": {
+    "tagline": "Donde la tradición japonesa se encuentra con la elegancia mediterránea.",
+    "hours": "Horario",
+    "hours1": "Martes a Domingo",
+    "hours2": "13:00 - 16:30",
+    "hours3": "20:30 - 23:30",
+    "hours4": "Lunes cerrado",
+    "contact": "Contacto",
+    "location": "Ubicación",
+    "address": "Pl. d'Europa, 102, 08902\nL'Hospitalet de Llobregat\nBarcelona",
+    "copyright": "© 2026 Sushi Maydo. All rights reserved.",
+    "order": "Pedido Online",
+    "delivery": "Delivery",
+    "giftCard": "Tarjeta Regalo",
+    "about": "Sobre Nosotros"
+  },
+  "Pages": {
+    "comingSoon": "Próximamente",
+    "backHome": "Volver al inicio",
+    "carta": "Nuestra Carta",
+    "cartaDesc": "Descubra nuestra selección de platos japoneses preparados con los ingredientes más frescos.",
+    "pedido": "Pedido Online",
+    "pedidoDesc": "Haga su pedido para recoger en nuestro restaurante. Disponible próximamente.",
+    "delivery": "Delivery",
+    "deliveryDesc": "Le llevamos la auténtica cocina japonesa directamente a su hogar.",
+    "reservas": "Reservas",
+    "reservasDesc": "Reserve su mesa y permítanos preparar la mejor experiencia para usted.",
+    "giftCard": "Tarjeta Regalo",
+    "giftCardDesc": "El regalo perfecto para los amantes de la cocina japonesa.",
+    "galeria": "Galería",
+    "galeriaDesc": "Explore nuestros momentos más especiales en imágenes.",
+    "contacto": "Contacto",
+    "contactoDesc": "Estamos aquí para atenderle. Contáctenos para cualquier consulta.",
+    "sobre": "Sobre Nosotros",
+    "sobreDesc": "Conozca la historia y la filosofía detrás de MAYDO."
+  }
+}
