@@ -91,6 +91,18 @@
     "giftCard": "礼品卡",
     "about": "关于我们"
   },
+  "Contact": {
+    "sub": "找到我们",
+    "title": "欢迎光临",
+    "address": "Pl. d'Europa, 102, 08902\nL'Hospitalet de Llobregat, Barcelona",
+    "phone": "+34 936 844 036",
+    "email": "sushimaydobcnplazaeuropa@gmail.com",
+    "hoursTitle": "营业时间",
+    "hours1": "周二至周日",
+    "hours2": "13:00 - 16:30 · 20:30 - 23:30",
+    "hours3": "周一休息",
+    "cta": "导航前往"
+  },
   "Pages": {
     "comingSoon": "即将上线",
     "backHome": "返回首页",

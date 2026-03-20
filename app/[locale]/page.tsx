@@ -5,6 +5,7 @@ import MenuSection from "@/components/home/MenuSection";
 import QuoteBanner from "@/components/home/QuoteBanner";
 import Gallery from "@/components/home/Gallery";
 import Reservation from "@/components/home/Reservation";
+import ContactMap from "@/components/home/ContactMap";
 import Footer from "@/components/home/Footer";
 
 export default function HomePage() {
@@ -17,6 +18,7 @@ export default function HomePage() {
       <QuoteBanner />
       <Gallery />
       <Reservation />
+      <ContactMap />
       <Footer />
     </>
   );
