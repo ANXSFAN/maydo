@@ -2,11 +2,12 @@
 
 import { useState } from "react";
 import { useTranslations } from "next-intl";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import FadeIn from "@/components/ui/FadeIn";
 import DiamondDivider from "@/components/ui/DiamondDivider";
 
 type Period = "lunch" | "dinner";
+type FormStatus = "idle" | "loading" | "success" | "error";
 
 const LUNCH_SLOTS = ["13:00", "13:30", "14:00", "14:30", "15:00"];
 const DINNER_SLOTS = ["20:30", "21:00", "21:30", "22:00", "22:30"];
@@ -17,8 +18,63 @@ export default function ReservasContent() {
   const [period, setPeriod] = useState<Period>("lunch");
   const [selectedTime, setSelectedTime] = useState<string>("");
   const [guests, setGuests] = useState<number>(2);
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
+  const [date, setDate] = useState("");
+  const [notes, setNotes] = useState("");
+  const [formStatus, setFormStatus] = useState<FormStatus>("idle");
+  const [errors, setErrors] = useState<Record<string, boolean>>({});
 
   const slots = period === "lunch" ? LUNCH_SLOTS : DINNER_SLOTS;
+
+  const validate = () => {
+    const newErrors: Record<string, boolean> = {};
+    if (!name.trim()) newErrors.name = true;
+    if (!email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))
+      newErrors.email = true;
+    if (!phone.trim()) newErrors.phone = true;
+    if (!date) newErrors.date = true;
+    if (!selectedTime) newErrors.time = true;
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleSubmit = async () => {
+    if (!validate()) return;
+    setFormStatus("loading");
+
+    try {
+      const res = await fetch("/api/reservations", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: name.trim(),
+          email: email.trim(),
+          phone: phone.trim(),
+          date,
+          time: selectedTime,
+          guests,
+          period,
+          notes: notes.trim() || null,
+        }),
+      });
+
+      if (!res.ok) throw new Error("Failed");
+
+      setFormStatus("success");
+      // Reset form
+      setName("");
+      setEmail("");
+      setPhone("");
+      setDate("");
+      setNotes("");
+      setSelectedTime("");
+      setGuests(2);
+    } catch {
+      setFormStatus("error");
+    }
+  };
 
   return (
     <section className="py-[clamp(60px,8vw,100px)] px-10 bg-cream">
@@ -27,147 +83,242 @@ export default function ReservasContent() {
           {/* Form */}
           <FadeIn className="flex-1">
             <div className="bg-white border border-beige p-[clamp(28px,4vw,56px)]">
-              {/* Period selection */}
-              <div className="mb-10">
-                <label className="font-body text-[11px] tracking-[3px] uppercase text-camel block mb-4">
-                  {t("selectPeriod")}
-                </label>
-                <div className="flex gap-4">
-                  {(["lunch", "dinner"] as Period[]).map((p) => (
-                    <button
-                      key={p}
-                      onClick={() => {
-                        setPeriod(p);
-                        setSelectedTime("");
-                      }}
-                      className={`
-                        flex-1 py-4 px-6 border text-center transition-all duration-300 cursor-pointer
-                        ${
-                          period === p
-                            ? "bg-maroon border-maroon text-white"
-                            : "bg-transparent border-beige text-maroon hover:border-maroon"
-                        }
-                      `}
-                    >
-                      <div className="text-[18px] font-light">{t(p)}</div>
-                      <div
-                        className={`font-body text-[12px] mt-1 ${
-                          period === p ? "text-white/60" : "text-gray"
-                        }`}
-                      >
-                        {t(`${p}Hours`)}
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Time slots */}
-              <div className="mb-10">
-                <label className="font-body text-[11px] tracking-[3px] uppercase text-camel block mb-4">
-                  {t("selectTime")}
-                </label>
-                <div className="flex flex-wrap gap-3">
-                  {slots.map((slot) => (
-                    <button
-                      key={slot}
-                      onClick={() => setSelectedTime(slot)}
-                      className={`
-                        px-5 py-3 border text-[15px] font-body font-light transition-all duration-300 cursor-pointer
-                        ${
-                          selectedTime === slot
-                            ? "bg-maroon border-maroon text-white"
-                            : "bg-transparent border-beige text-maroon hover:border-maroon"
-                        }
-                      `}
-                    >
-                      {slot}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Guest count */}
-              <div className="mb-10">
-                <label className="font-body text-[11px] tracking-[3px] uppercase text-camel block mb-4">
-                  {t("selectGuests")}
-                </label>
-                <div className="flex flex-wrap gap-3">
-                  {GUEST_OPTIONS.map((n) => (
-                    <button
-                      key={n}
-                      onClick={() => setGuests(n)}
-                      className={`
-                        w-12 h-12 border text-[16px] font-light transition-all duration-300 cursor-pointer
-                        ${
-                          guests === n
-                            ? "bg-maroon border-maroon text-white"
-                            : "bg-transparent border-beige text-maroon hover:border-maroon"
-                        }
-                      `}
-                    >
-                      {n}
-                    </button>
-                  ))}
-                  <button
-                    onClick={() => setGuests(9)}
-                    className={`
-                      px-5 h-12 border text-[14px] font-body font-light transition-all duration-300 cursor-pointer
-                      ${
-                        guests === 9
-                          ? "bg-maroon border-maroon text-white"
-                          : "bg-transparent border-beige text-maroon hover:border-maroon"
-                      }
-                    `}
+              {/* Success / Error messages */}
+              <AnimatePresence mode="wait">
+                {formStatus === "success" && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0 }}
+                    className="mb-8 p-5 bg-green-50 border border-green-200 text-center"
                   >
-                    9+
+                    <div className="text-green-800 text-[18px] font-light mb-1">
+                      {t("successTitle")}
+                    </div>
+                    <p className="font-body text-[14px] text-green-600 font-light">
+                      {t("successMsg")}
+                    </p>
+                    <button
+                      onClick={() => setFormStatus("idle")}
+                      className="mt-3 px-6 py-2 bg-maroon text-white font-body text-[13px] tracking-[2px] uppercase border-none cursor-pointer hover:bg-maroon-dark transition-colors"
+                    >
+                      {t("newReservation")}
+                    </button>
+                  </motion.div>
+                )}
+                {formStatus === "error" && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0 }}
+                    className="mb-8 p-5 bg-red-50 border border-red-200 text-center"
+                  >
+                    <div className="text-red-800 text-[16px] font-light mb-1">
+                      {t("errorTitle")}
+                    </div>
+                    <p className="font-body text-[14px] text-red-600 font-light">
+                      {t("errorMsg")}
+                    </p>
+                    <button
+                      onClick={() => setFormStatus("idle")}
+                      className="mt-3 px-6 py-2 border border-red-300 text-red-700 font-body text-[13px] tracking-[1px] bg-transparent cursor-pointer hover:bg-red-100 transition-colors"
+                    >
+                      {t("retry")}
+                    </button>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
+              {formStatus !== "success" && (
+                <>
+                  {/* Period selection */}
+                  <div className="mb-10">
+                    <label className="font-body text-[11px] tracking-[3px] uppercase text-camel block mb-4">
+                      {t("selectPeriod")}
+                    </label>
+                    <div className="flex gap-4">
+                      {(["lunch", "dinner"] as Period[]).map((p) => (
+                        <button
+                          key={p}
+                          onClick={() => {
+                            setPeriod(p);
+                            setSelectedTime("");
+                          }}
+                          className={`
+                            flex-1 py-4 px-6 border text-center transition-all duration-300 cursor-pointer
+                            ${
+                              period === p
+                                ? "bg-maroon border-maroon text-white"
+                                : "bg-transparent border-beige text-maroon hover:border-maroon"
+                            }
+                          `}
+                        >
+                          <div className="text-[18px] font-light">{t(p)}</div>
+                          <div
+                            className={`font-body text-[12px] mt-1 ${
+                              period === p ? "text-white/60" : "text-gray"
+                            }`}
+                          >
+                            {t(`${p}Hours`)}
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Time slots */}
+                  <div className="mb-10">
+                    <label className="font-body text-[11px] tracking-[3px] uppercase text-camel block mb-4">
+                      {t("selectTime")}
+                      {errors.time && (
+                        <span className="text-red-500 ml-2 normal-case tracking-normal">
+                          *{t("required")}
+                        </span>
+                      )}
+                    </label>
+                    <div className="flex flex-wrap gap-3">
+                      {slots.map((slot) => (
+                        <button
+                          key={slot}
+                          onClick={() => {
+                            setSelectedTime(slot);
+                            setErrors((e) => ({ ...e, time: false }));
+                          }}
+                          className={`
+                            px-5 py-3 border text-[15px] font-body font-light transition-all duration-300 cursor-pointer
+                            ${
+                              selectedTime === slot
+                                ? "bg-maroon border-maroon text-white"
+                                : errors.time
+                                  ? "bg-transparent border-red-300 text-maroon hover:border-maroon"
+                                  : "bg-transparent border-beige text-maroon hover:border-maroon"
+                            }
+                          `}
+                        >
+                          {slot}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Guest count */}
+                  <div className="mb-10">
+                    <label className="font-body text-[11px] tracking-[3px] uppercase text-camel block mb-4">
+                      {t("selectGuests")}
+                    </label>
+                    <div className="flex flex-wrap gap-3">
+                      {GUEST_OPTIONS.map((n) => (
+                        <button
+                          key={n}
+                          onClick={() => setGuests(n)}
+                          className={`
+                            w-12 h-12 border text-[16px] font-light transition-all duration-300 cursor-pointer
+                            ${
+                              guests === n
+                                ? "bg-maroon border-maroon text-white"
+                                : "bg-transparent border-beige text-maroon hover:border-maroon"
+                            }
+                          `}
+                        >
+                          {n}
+                        </button>
+                      ))}
+                      <button
+                        onClick={() => setGuests(9)}
+                        className={`
+                          px-5 h-12 border text-[14px] font-body font-light transition-all duration-300 cursor-pointer
+                          ${
+                            guests === 9
+                              ? "bg-maroon border-maroon text-white"
+                              : "bg-transparent border-beige text-maroon hover:border-maroon"
+                          }
+                        `}
+                      >
+                        9+
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Contact fields */}
+                  <div className="grid grid-cols-2 gap-x-[30px] gap-y-0 mb-6 max-sm:grid-cols-1">
+                    <div className="col-span-2 max-sm:col-span-1">
+                      <input
+                        value={name}
+                        onChange={(e) => {
+                          setName(e.target.value);
+                          setErrors((prev) => ({ ...prev, name: false }));
+                        }}
+                        className={`w-full py-4 border-0 border-b bg-transparent font-body text-[15px] text-ink outline-none transition-colors focus:border-b-maroon placeholder:text-gray ${
+                          errors.name ? "border-b-red-400" : "border-b-beige"
+                        }`}
+                        placeholder={t("name")}
+                      />
+                    </div>
+                    <div>
+                      <input
+                        type="email"
+                        value={email}
+                        onChange={(e) => {
+                          setEmail(e.target.value);
+                          setErrors((prev) => ({ ...prev, email: false }));
+                        }}
+                        className={`w-full py-4 border-0 border-b bg-transparent font-body text-[15px] text-ink outline-none transition-colors focus:border-b-maroon placeholder:text-gray ${
+                          errors.email ? "border-b-red-400" : "border-b-beige"
+                        }`}
+                        placeholder={t("email")}
+                      />
+                    </div>
+                    <div>
+                      <input
+                        type="tel"
+                        value={phone}
+                        onChange={(e) => {
+                          setPhone(e.target.value);
+                          setErrors((prev) => ({ ...prev, phone: false }));
+                        }}
+                        className={`w-full py-4 border-0 border-b bg-transparent font-body text-[15px] text-ink outline-none transition-colors focus:border-b-maroon placeholder:text-gray ${
+                          errors.phone ? "border-b-red-400" : "border-b-beige"
+                        }`}
+                        placeholder={t("phone")}
+                      />
+                    </div>
+                    <div className="col-span-2 max-sm:col-span-1">
+                      <input
+                        type="date"
+                        value={date}
+                        onChange={(e) => {
+                          setDate(e.target.value);
+                          setErrors((prev) => ({ ...prev, date: false }));
+                        }}
+                        min={new Date().toISOString().split("T")[0]}
+                        className={`w-full py-4 border-0 border-b bg-transparent font-body text-[15px] text-ink outline-none transition-colors focus:border-b-maroon placeholder:text-gray ${
+                          errors.date ? "border-b-red-400" : "border-b-beige"
+                        }`}
+                      />
+                    </div>
+                    <div className="col-span-2 max-sm:col-span-1">
+                      <textarea
+                        value={notes}
+                        onChange={(e) => setNotes(e.target.value)}
+                        rows={3}
+                        className="w-full py-4 border-0 border-b border-beige bg-transparent font-body text-[15px] text-ink outline-none transition-colors focus:border-b-maroon placeholder:text-gray resize-none"
+                        placeholder={t("notes")}
+                      />
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={handleSubmit}
+                    disabled={formStatus === "loading"}
+                    className="w-full mt-4 px-12 py-[18px] bg-maroon text-white border-none font-heading text-base tracking-[3px] uppercase cursor-pointer transition-all duration-400 hover:bg-maroon-dark hover:-translate-y-0.5 hover:shadow-[0_8px_30px_rgba(122,66,66,0.3)] disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:translate-y-0"
+                  >
+                    {formStatus === "loading" ? t("submitting") : t("btn")}
                   </button>
-                </div>
-              </div>
-
-              {/* Contact fields */}
-              <div className="grid grid-cols-2 gap-x-[30px] gap-y-0 mb-6 max-sm:grid-cols-1">
-                <div className="col-span-2 max-sm:col-span-1">
-                  <input
-                    className="w-full py-4 border-0 border-b border-beige bg-transparent font-body text-[15px] text-ink outline-none transition-colors focus:border-b-maroon placeholder:text-gray"
-                    placeholder={t("name")}
-                  />
-                </div>
-                <div>
-                  <input
-                    type="email"
-                    className="w-full py-4 border-0 border-b border-beige bg-transparent font-body text-[15px] text-ink outline-none transition-colors focus:border-b-maroon placeholder:text-gray"
-                    placeholder={t("email")}
-                  />
-                </div>
-                <div>
-                  <input
-                    type="tel"
-                    className="w-full py-4 border-0 border-b border-beige bg-transparent font-body text-[15px] text-ink outline-none transition-colors focus:border-b-maroon placeholder:text-gray"
-                    placeholder={t("phone")}
-                  />
-                </div>
-                <div className="col-span-2 max-sm:col-span-1">
-                  <input
-                    type="date"
-                    className="w-full py-4 border-0 border-b border-beige bg-transparent font-body text-[15px] text-ink outline-none transition-colors focus:border-b-maroon placeholder:text-gray"
-                  />
-                </div>
-                <div className="col-span-2 max-sm:col-span-1">
-                  <textarea
-                    rows={3}
-                    className="w-full py-4 border-0 border-b border-beige bg-transparent font-body text-[15px] text-ink outline-none transition-colors focus:border-b-maroon placeholder:text-gray resize-none"
-                    placeholder={t("notes")}
-                  />
-                </div>
-              </div>
-
-              <button className="w-full mt-4 px-12 py-[18px] bg-maroon text-white border-none font-heading text-base tracking-[3px] uppercase cursor-pointer transition-all duration-400 hover:bg-maroon-dark hover:-translate-y-0.5 hover:shadow-[0_8px_30px_rgba(122,66,66,0.3)]">
-                {t("btn")}
-              </button>
-              <p className="font-body text-xs text-gray text-center mt-4 font-light">
-                {t("confirmation")}
-              </p>
+                  <p className="font-body text-xs text-gray text-center mt-4 font-light">
+                    {t("confirmation")}
+                  </p>
+                </>
+              )}
             </div>
           </FadeIn>
 

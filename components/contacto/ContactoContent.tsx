@@ -1,11 +1,56 @@
 "use client";
 
+import { useState } from "react";
 import { useTranslations } from "next-intl";
+import { motion, AnimatePresence } from "framer-motion";
 import FadeIn from "@/components/ui/FadeIn";
 import DiamondDivider from "@/components/ui/DiamondDivider";
 
+type FormStatus = "idle" | "loading" | "success" | "error";
+
 export default function ContactoContent() {
   const t = useTranslations("Contacto");
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [message, setMessage] = useState("");
+  const [formStatus, setFormStatus] = useState<FormStatus>("idle");
+  const [errors, setErrors] = useState<Record<string, boolean>>({});
+
+  const validate = () => {
+    const newErrors: Record<string, boolean> = {};
+    if (!name.trim()) newErrors.name = true;
+    if (!email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))
+      newErrors.email = true;
+    if (!message.trim()) newErrors.message = true;
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleSubmit = async () => {
+    if (!validate()) return;
+    setFormStatus("loading");
+
+    try {
+      const res = await fetch("/api/contact", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: name.trim(),
+          email: email.trim(),
+          message: message.trim(),
+        }),
+      });
+
+      if (!res.ok) throw new Error("Failed");
+
+      setFormStatus("success");
+      setName("");
+      setEmail("");
+      setMessage("");
+    } catch {
+      setFormStatus("error");
+    }
+  };
 
   return (
     <section className="py-[clamp(60px,8vw,100px)] px-10 bg-cream">
@@ -102,26 +147,101 @@ export default function ContactoContent() {
                 {t("formDesc")}
               </p>
 
-              <div className="space-y-0">
-                <input
-                  className="w-full py-4 border-0 border-b border-beige bg-transparent font-body text-[15px] text-ink outline-none transition-colors focus:border-b-maroon placeholder:text-gray"
-                  placeholder={t("name")}
-                />
-                <input
-                  type="email"
-                  className="w-full py-4 border-0 border-b border-beige bg-transparent font-body text-[15px] text-ink outline-none transition-colors focus:border-b-maroon placeholder:text-gray"
-                  placeholder={t("email")}
-                />
-                <textarea
-                  rows={4}
-                  className="w-full py-4 border-0 border-b border-beige bg-transparent font-body text-[15px] text-ink outline-none transition-colors focus:border-b-maroon placeholder:text-gray resize-none"
-                  placeholder={t("message")}
-                />
-              </div>
+              {/* Success / Error messages */}
+              <AnimatePresence mode="wait">
+                {formStatus === "success" && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0 }}
+                    className="mb-6 p-5 bg-green-50 border border-green-200 text-center"
+                  >
+                    <div className="text-green-800 text-[16px] font-light mb-1">
+                      {t("successTitle")}
+                    </div>
+                    <p className="font-body text-[13px] text-green-600 font-light">
+                      {t("successMsg")}
+                    </p>
+                    <button
+                      onClick={() => setFormStatus("idle")}
+                      className="mt-3 px-6 py-2 bg-maroon text-white font-body text-[12px] tracking-[2px] uppercase border-none cursor-pointer hover:bg-maroon-dark transition-colors"
+                    >
+                      {t("sendAnother")}
+                    </button>
+                  </motion.div>
+                )}
+                {formStatus === "error" && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0 }}
+                    className="mb-6 p-5 bg-red-50 border border-red-200 text-center"
+                  >
+                    <div className="text-red-800 text-[15px] font-light mb-1">
+                      {t("errorTitle")}
+                    </div>
+                    <p className="font-body text-[13px] text-red-600 font-light">
+                      {t("errorMsg")}
+                    </p>
+                    <button
+                      onClick={() => setFormStatus("idle")}
+                      className="mt-3 px-6 py-2 border border-red-300 text-red-700 font-body text-[12px] tracking-[1px] bg-transparent cursor-pointer hover:bg-red-100 transition-colors"
+                    >
+                      {t("retry")}
+                    </button>
+                  </motion.div>
+                )}
+              </AnimatePresence>
 
-              <button className="w-full mt-8 px-12 py-[18px] bg-maroon text-white border-none font-heading text-base tracking-[3px] uppercase cursor-pointer transition-all duration-400 hover:bg-maroon-dark hover:-translate-y-0.5 hover:shadow-[0_8px_30px_rgba(122,66,66,0.3)]">
-                {t("send")}
-              </button>
+              {formStatus !== "success" && (
+                <>
+                  <div className="space-y-0">
+                    <input
+                      value={name}
+                      onChange={(e) => {
+                        setName(e.target.value);
+                        setErrors((prev) => ({ ...prev, name: false }));
+                      }}
+                      className={`w-full py-4 border-0 border-b bg-transparent font-body text-[15px] text-ink outline-none transition-colors focus:border-b-maroon placeholder:text-gray ${
+                        errors.name ? "border-b-red-400" : "border-b-beige"
+                      }`}
+                      placeholder={t("name")}
+                    />
+                    <input
+                      type="email"
+                      value={email}
+                      onChange={(e) => {
+                        setEmail(e.target.value);
+                        setErrors((prev) => ({ ...prev, email: false }));
+                      }}
+                      className={`w-full py-4 border-0 border-b bg-transparent font-body text-[15px] text-ink outline-none transition-colors focus:border-b-maroon placeholder:text-gray ${
+                        errors.email ? "border-b-red-400" : "border-b-beige"
+                      }`}
+                      placeholder={t("email")}
+                    />
+                    <textarea
+                      value={message}
+                      onChange={(e) => {
+                        setMessage(e.target.value);
+                        setErrors((prev) => ({ ...prev, message: false }));
+                      }}
+                      rows={4}
+                      className={`w-full py-4 border-0 border-b bg-transparent font-body text-[15px] text-ink outline-none transition-colors focus:border-b-maroon placeholder:text-gray resize-none ${
+                        errors.message ? "border-b-red-400" : "border-b-beige"
+                      }`}
+                      placeholder={t("message")}
+                    />
+                  </div>
+
+                  <button
+                    onClick={handleSubmit}
+                    disabled={formStatus === "loading"}
+                    className="w-full mt-8 px-12 py-[18px] bg-maroon text-white border-none font-heading text-base tracking-[3px] uppercase cursor-pointer transition-all duration-400 hover:bg-maroon-dark hover:-translate-y-0.5 hover:shadow-[0_8px_30px_rgba(122,66,66,0.3)] disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:translate-y-0"
+                  >
+                    {formStatus === "loading" ? t("sending") : t("send")}
+                  </button>
+                </>
+              )}
             </div>
           </FadeIn>
         </div>

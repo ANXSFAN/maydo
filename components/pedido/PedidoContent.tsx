@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import Image from "next/image";
 import { useTranslations, useLocale } from "next-intl";
 import { motion, AnimatePresence } from "framer-motion";
@@ -23,10 +23,14 @@ type CartItem = {
   quantity: number;
 };
 
+type OrderStatus = "idle" | "loading" | "success" | "error";
+
 const PICKUP_SLOTS = [
   "13:00", "13:30", "14:00", "14:30", "15:00", "15:30",
   "20:00", "20:30", "21:00", "21:30", "22:00", "22:30",
 ];
+
+const CART_STORAGE_KEY = "sushi-maydo-cart";
 
 export default function PedidoContent() {
   const t = useTranslations("Pedido");
@@ -39,6 +43,40 @@ export default function PedidoContent() {
   const [showMobileCart, setShowMobileCart] = useState(false);
   const [showCatMenu, setShowCatMenu] = useState(false);
   const catNavRef = useRef<HTMLDivElement>(null);
+
+  // Checkout form state
+  const [checkoutName, setCheckoutName] = useState("");
+  const [checkoutPhone, setCheckoutPhone] = useState("");
+  const [checkoutEmail, setCheckoutEmail] = useState("");
+  const [checkoutNotes, setCheckoutNotes] = useState("");
+  const [selectedPickupTime, setSelectedPickupTime] = useState("");
+  const [orderStatus, setOrderStatus] = useState<OrderStatus>("idle");
+  const [orderNumber, setOrderNumber] = useState<number | null>(null);
+  const [checkoutErrors, setCheckoutErrors] = useState<Record<string, boolean>>({});
+
+  // Coupon state
+  const [couponCode, setCouponCode] = useState("");
+  const [couponStatus, setCouponStatus] = useState<"idle" | "loading" | "valid" | "invalid">("idle");
+  const [couponDiscount, setCouponDiscount] = useState(0);
+  const [couponError, setCouponError] = useState("");
+
+  // Load cart from localStorage on mount
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(CART_STORAGE_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) setCart(parsed);
+      }
+    } catch { /* ignore */ }
+  }, []);
+
+  // Save cart to localStorage on change
+  useEffect(() => {
+    try {
+      localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(cart));
+    } catch { /* ignore */ }
+  }, [cart]);
 
   const visibleCategories =
     activeSection === "all"
@@ -79,8 +117,11 @@ export default function PedidoContent() {
     );
   };
 
-  const getItem = (cartItem: CartItem): MenuItem | null =>
-    MENU_DATA[cartItem.categoryKey]?.items[cartItem.itemIndex] ?? null;
+  const getItem = useCallback(
+    (cartItem: CartItem): MenuItem | null =>
+      MENU_DATA[cartItem.categoryKey]?.items[cartItem.itemIndex] ?? null,
+    []
+  );
 
   const getItemName = (categoryKey: string, itemIndex: number, fallback: string) =>
     dishI18n[categoryKey]?.items[itemIndex]?.name || fallback;
@@ -107,6 +148,112 @@ export default function PedidoContent() {
       btn?.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
     }
   }, [activeCategory]);
+
+  const finalTotal = Math.max(0, cartTotal - couponDiscount);
+
+  const validateCoupon = async () => {
+    if (!couponCode.trim()) return;
+    setCouponStatus("loading");
+    setCouponError("");
+
+    try {
+      const res = await fetch("/api/coupons/validate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code: couponCode.trim(), order_total: cartTotal }),
+      });
+      const data = await res.json();
+
+      if (data.valid) {
+        setCouponDiscount(data.discount_amount);
+        setCouponStatus("valid");
+      } else {
+        setCouponDiscount(0);
+        setCouponStatus("invalid");
+        if (data.error === "min_order_not_met") {
+          setCouponError(t("couponMinOrder", { amount: formatPrice(data.min_order) }));
+        } else {
+          setCouponError(t("couponInvalid"));
+        }
+      }
+    } catch {
+      setCouponStatus("invalid");
+      setCouponError(t("couponInvalid"));
+    }
+  };
+
+  const validateCheckout = () => {
+    const errs: Record<string, boolean> = {};
+    if (!checkoutName.trim()) errs.name = true;
+    if (!checkoutPhone.trim()) errs.phone = true;
+    if (!checkoutEmail.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(checkoutEmail))
+      errs.email = true;
+    if (!selectedPickupTime) errs.pickupTime = true;
+    setCheckoutErrors(errs);
+    return Object.keys(errs).length === 0;
+  };
+
+  const handlePlaceOrder = async () => {
+    if (!validateCheckout()) return;
+    setOrderStatus("loading");
+
+    try {
+      const orderItems = cart.map((c) => {
+        const item = getItem(c);
+        return {
+          categoryKey: c.categoryKey,
+          itemIndex: c.itemIndex,
+          quantity: c.quantity,
+          name: getItemName(c.categoryKey, c.itemIndex, item?.name ?? ""),
+          price: item?.price ?? 0,
+        };
+      });
+
+      const res = await fetch("/api/orders", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: checkoutName.trim(),
+          phone: checkoutPhone.trim(),
+          email: checkoutEmail.trim(),
+          pickup_time: selectedPickupTime,
+          notes: checkoutNotes.trim() || null,
+          items: orderItems,
+          total: finalTotal,
+          order_type: "pickup",
+          discount_code: couponStatus === "valid" ? couponCode.trim() : null,
+          discount_amount: couponDiscount,
+        }),
+      });
+
+      if (!res.ok) throw new Error("Failed");
+
+      const data = await res.json();
+      setOrderNumber(data.order_number);
+      setOrderStatus("success");
+      // Clear cart
+      setCart([]);
+      localStorage.removeItem(CART_STORAGE_KEY);
+    } catch {
+      setOrderStatus("error");
+    }
+  };
+
+  const resetCheckout = () => {
+    setShowCheckout(false);
+    setOrderStatus("idle");
+    setOrderNumber(null);
+    setCheckoutName("");
+    setCheckoutPhone("");
+    setCheckoutEmail("");
+    setCheckoutNotes("");
+    setSelectedPickupTime("");
+    setCheckoutErrors({});
+    setCouponCode("");
+    setCouponStatus("idle");
+    setCouponDiscount(0);
+    setCouponError("");
+  };
 
   return (
     <>
@@ -303,7 +450,7 @@ export default function PedidoContent() {
                                   <span className="text-[24px] sm:text-[16px] font-light text-camel block mb-2.5 sm:mb-3">
                                     {formatPrice(item.price)}
                                   </span>
-                                  {/* Add / Qty controls - always visible, full width on mobile */}
+                                  {/* Add / Qty controls */}
                                   {qty > 0 ? (
                                     <div className="flex items-center justify-between border border-beige">
                                       <button
@@ -623,7 +770,7 @@ export default function PedidoContent() {
           >
             <div
               className="absolute inset-0 bg-maroon-dark/60 backdrop-blur-sm"
-              onClick={() => setShowCheckout(false)}
+              onClick={() => orderStatus !== "loading" && resetCheckout()}
             />
             <motion.div
               initial={{ opacity: 0, y: 30, scale: 0.97 }}
@@ -636,91 +783,234 @@ export default function PedidoContent() {
                 {/* Drag handle on mobile */}
                 <div className="w-10 h-1 bg-beige rounded-full mx-auto mb-4 sm:hidden" />
 
-                <button
-                  onClick={() => setShowCheckout(false)}
-                  className="absolute top-5 right-5 w-8 h-8 flex items-center justify-center text-gray hover:text-maroon transition-colors cursor-pointer bg-transparent border-none text-xl"
-                >
-                  ×
-                </button>
+                {orderStatus !== "loading" && (
+                  <button
+                    onClick={resetCheckout}
+                    className="absolute top-5 right-5 w-8 h-8 flex items-center justify-center text-gray hover:text-maroon transition-colors cursor-pointer bg-transparent border-none text-xl"
+                  >
+                    ×
+                  </button>
+                )}
 
-                <p className="font-body text-[11px] tracking-[3px] uppercase text-camel mb-2">
-                  {t("checkoutSub")}
-                </p>
-                <h3 className="text-[24px] sm:text-[28px] font-light text-maroon mb-2">
-                  {t("checkoutTitle")}
-                </h3>
-                <DiamondDivider />
-
-                <div className="my-5 sm:my-6 p-3 sm:p-4 bg-white border border-beige">
-                  {cart.map((cartItem) => {
-                    const item = getItem(cartItem);
-                    if (!item) return null;
-                    return (
-                      <div
-                        key={`co-${cartItem.categoryKey}-${cartItem.itemIndex}`}
-                        className="flex justify-between py-1.5 font-body text-[13px] text-gray font-light"
-                      >
-                        <span className="truncate mr-2">
-                          {getItemName(cartItem.categoryKey, cartItem.itemIndex, item.name)} × {cartItem.quantity}
+                {/* Order success */}
+                {orderStatus === "success" ? (
+                  <div className="text-center py-8">
+                    <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-green-600">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                      </svg>
+                    </div>
+                    <h3 className="text-[24px] font-light text-maroon mb-2">
+                      {t("orderSuccessTitle")}
+                    </h3>
+                    {orderNumber && (
+                      <div className="mb-4">
+                        <span className="font-body text-[11px] tracking-[3px] uppercase text-camel">
+                          {t("orderNumberLabel")}
                         </span>
-                        <span className="text-maroon shrink-0">
-                          {formatPrice(item.price * cartItem.quantity)}
+                        <div className="text-[36px] font-light text-maroon">
+                          #{orderNumber}
+                        </div>
+                      </div>
+                    )}
+                    <p className="font-body text-[14px] text-gray font-light mb-6">
+                      {t("orderSuccessMsg")}
+                    </p>
+                    <button
+                      onClick={resetCheckout}
+                      className="px-8 py-3 bg-maroon text-white font-body text-[13px] tracking-[2px] uppercase border-none cursor-pointer hover:bg-maroon-dark transition-colors"
+                    >
+                      {t("backToMenu")}
+                    </button>
+                  </div>
+                ) : (
+                  <>
+                    <p className="font-body text-[11px] tracking-[3px] uppercase text-camel mb-2">
+                      {t("checkoutSub")}
+                    </p>
+                    <h3 className="text-[24px] sm:text-[28px] font-light text-maroon mb-2">
+                      {t("checkoutTitle")}
+                    </h3>
+                    <DiamondDivider />
+
+                    {/* Error message */}
+                    {orderStatus === "error" && (
+                      <motion.div
+                        initial={{ opacity: 0, y: -10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="mt-4 p-4 bg-red-50 border border-red-200 text-center"
+                      >
+                        <p className="font-body text-[14px] text-red-700 font-light">
+                          {t("orderErrorMsg")}
+                        </p>
+                      </motion.div>
+                    )}
+
+                    <div className="my-5 sm:my-6 p-3 sm:p-4 bg-white border border-beige">
+                      {cart.map((cartItem) => {
+                        const item = getItem(cartItem);
+                        if (!item) return null;
+                        return (
+                          <div
+                            key={`co-${cartItem.categoryKey}-${cartItem.itemIndex}`}
+                            className="flex justify-between py-1.5 font-body text-[13px] text-gray font-light"
+                          >
+                            <span className="truncate mr-2">
+                              {getItemName(cartItem.categoryKey, cartItem.itemIndex, item.name)} × {cartItem.quantity}
+                            </span>
+                            <span className="text-maroon shrink-0">
+                              {formatPrice(item.price * cartItem.quantity)}
+                            </span>
+                          </div>
+                        );
+                      })}
+                      {couponStatus === "valid" && couponDiscount > 0 && (
+                        <div className="flex justify-between py-1.5 font-body text-[13px] text-green-600 font-light border-t border-beige mt-2 pt-2">
+                          <span>{t("discount")}</span>
+                          <span>-{formatPrice(couponDiscount)}</span>
+                        </div>
+                      )}
+                      <div className="flex justify-between pt-3 mt-3 border-t border-beige">
+                        <span className="font-body text-[13px] text-gray uppercase tracking-[2px]">
+                          {t("total")}
+                        </span>
+                        <span className="text-[22px] font-light text-maroon">
+                          {formatPrice(finalTotal)}
                         </span>
                       </div>
-                    );
-                  })}
-                  <div className="flex justify-between pt-3 mt-3 border-t border-beige">
-                    <span className="font-body text-[13px] text-gray uppercase tracking-[2px]">
-                      {t("total")}
-                    </span>
-                    <span className="text-[22px] font-light text-maroon">
-                      {formatPrice(cartTotal)}
-                    </span>
-                  </div>
-                </div>
+                    </div>
 
-                <label className="font-body text-[11px] tracking-[3px] uppercase text-camel block mb-3">
-                  {t("pickupTime")}
-                </label>
-                <div className="grid grid-cols-4 sm:flex sm:flex-wrap gap-2 mb-6">
-                  {PICKUP_SLOTS.map((slot) => (
+                    {/* Coupon code */}
+                    <div className="mb-6">
+                      <label className="font-body text-[11px] tracking-[3px] uppercase text-camel block mb-3">
+                        {t("couponLabel")}
+                      </label>
+                      <div className="flex gap-2">
+                        <input
+                          value={couponCode}
+                          onChange={(e) => {
+                            setCouponCode(e.target.value.toUpperCase());
+                            if (couponStatus !== "idle") {
+                              setCouponStatus("idle");
+                              setCouponDiscount(0);
+                              setCouponError("");
+                            }
+                          }}
+                          className={`flex-1 py-2.5 px-3 border font-body text-[14px] text-ink outline-none transition-colors bg-transparent ${
+                            couponStatus === "valid"
+                              ? "border-green-400"
+                              : couponStatus === "invalid"
+                                ? "border-red-400"
+                                : "border-beige focus:border-maroon"
+                          }`}
+                          placeholder={t("couponPlaceholder")}
+                        />
+                        <button
+                          onClick={validateCoupon}
+                          disabled={couponStatus === "loading" || !couponCode.trim()}
+                          className="px-4 py-2.5 bg-maroon text-white font-body text-[12px] tracking-[1px] uppercase border-none cursor-pointer hover:bg-maroon-dark transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                        >
+                          {couponStatus === "loading" ? "..." : t("couponApply")}
+                        </button>
+                      </div>
+                      {couponStatus === "valid" && (
+                        <p className="font-body text-[12px] text-green-600 mt-1 font-light">
+                          {t("couponApplied", { amount: formatPrice(couponDiscount) })}
+                        </p>
+                      )}
+                      {couponStatus === "invalid" && couponError && (
+                        <p className="font-body text-[12px] text-red-500 mt-1 font-light">
+                          {couponError}
+                        </p>
+                      )}
+                    </div>
+
+                    <label className="font-body text-[11px] tracking-[3px] uppercase text-camel block mb-3">
+                      {t("pickupTime")}
+                      {checkoutErrors.pickupTime && (
+                        <span className="text-red-500 ml-2 normal-case tracking-normal">
+                          *{t("required")}
+                        </span>
+                      )}
+                    </label>
+                    <div className="grid grid-cols-4 sm:flex sm:flex-wrap gap-2 mb-6">
+                      {PICKUP_SLOTS.map((slot) => (
+                        <button
+                          key={slot}
+                          onClick={() => {
+                            setSelectedPickupTime(slot);
+                            setCheckoutErrors((e) => ({ ...e, pickupTime: false }));
+                          }}
+                          className={`px-3 sm:px-4 py-2 border text-[12px] sm:text-[13px] font-body cursor-pointer transition-all ${
+                            selectedPickupTime === slot
+                              ? "bg-maroon text-white border-maroon"
+                              : checkoutErrors.pickupTime
+                                ? "border-red-300 text-maroon bg-transparent hover:border-maroon"
+                                : "border-beige text-maroon bg-transparent hover:border-maroon"
+                          }`}
+                        >
+                          {slot}
+                        </button>
+                      ))}
+                    </div>
+
+                    <div className="space-y-0">
+                      <input
+                        value={checkoutName}
+                        onChange={(e) => {
+                          setCheckoutName(e.target.value);
+                          setCheckoutErrors((prev) => ({ ...prev, name: false }));
+                        }}
+                        className={`w-full py-3.5 sm:py-4 border-0 border-b bg-transparent font-body text-[15px] text-ink outline-none transition-colors focus:border-b-maroon placeholder:text-gray ${
+                          checkoutErrors.name ? "border-b-red-400" : "border-b-beige"
+                        }`}
+                        placeholder={t("name")}
+                      />
+                      <input
+                        type="tel"
+                        value={checkoutPhone}
+                        onChange={(e) => {
+                          setCheckoutPhone(e.target.value);
+                          setCheckoutErrors((prev) => ({ ...prev, phone: false }));
+                        }}
+                        className={`w-full py-3.5 sm:py-4 border-0 border-b bg-transparent font-body text-[15px] text-ink outline-none transition-colors focus:border-b-maroon placeholder:text-gray ${
+                          checkoutErrors.phone ? "border-b-red-400" : "border-b-beige"
+                        }`}
+                        placeholder={t("phone")}
+                      />
+                      <input
+                        type="email"
+                        value={checkoutEmail}
+                        onChange={(e) => {
+                          setCheckoutEmail(e.target.value);
+                          setCheckoutErrors((prev) => ({ ...prev, email: false }));
+                        }}
+                        className={`w-full py-3.5 sm:py-4 border-0 border-b bg-transparent font-body text-[15px] text-ink outline-none transition-colors focus:border-b-maroon placeholder:text-gray ${
+                          checkoutErrors.email ? "border-b-red-400" : "border-b-beige"
+                        }`}
+                        placeholder={t("email")}
+                      />
+                      <textarea
+                        value={checkoutNotes}
+                        onChange={(e) => setCheckoutNotes(e.target.value)}
+                        rows={2}
+                        className="w-full py-3.5 sm:py-4 border-0 border-b border-beige bg-transparent font-body text-[15px] text-ink outline-none transition-colors focus:border-b-maroon placeholder:text-gray resize-none"
+                        placeholder={t("orderNotes")}
+                      />
+                    </div>
+
                     <button
-                      key={slot}
-                      className="px-3 sm:px-4 py-2 border border-beige text-[12px] sm:text-[13px] font-body text-maroon cursor-pointer transition-all hover:border-maroon focus:bg-maroon focus:text-white focus:border-maroon bg-transparent"
+                      onClick={handlePlaceOrder}
+                      disabled={orderStatus === "loading"}
+                      className="w-full mt-6 sm:mt-8 px-12 py-4 sm:py-[18px] bg-maroon text-white border-none font-heading text-[14px] sm:text-base tracking-[3px] uppercase cursor-pointer transition-all duration-400 hover:bg-maroon-dark active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed"
                     >
-                      {slot}
+                      {orderStatus === "loading" ? t("submitting") : t("placeOrder")}
                     </button>
-                  ))}
-                </div>
-
-                <div className="space-y-0">
-                  <input
-                    className="w-full py-3.5 sm:py-4 border-0 border-b border-beige bg-transparent font-body text-[15px] text-ink outline-none transition-colors focus:border-b-maroon placeholder:text-gray"
-                    placeholder={t("name")}
-                  />
-                  <input
-                    type="tel"
-                    className="w-full py-3.5 sm:py-4 border-0 border-b border-beige bg-transparent font-body text-[15px] text-ink outline-none transition-colors focus:border-b-maroon placeholder:text-gray"
-                    placeholder={t("phone")}
-                  />
-                  <input
-                    type="email"
-                    className="w-full py-3.5 sm:py-4 border-0 border-b border-beige bg-transparent font-body text-[15px] text-ink outline-none transition-colors focus:border-b-maroon placeholder:text-gray"
-                    placeholder={t("email")}
-                  />
-                  <textarea
-                    rows={2}
-                    className="w-full py-3.5 sm:py-4 border-0 border-b border-beige bg-transparent font-body text-[15px] text-ink outline-none transition-colors focus:border-b-maroon placeholder:text-gray resize-none"
-                    placeholder={t("orderNotes")}
-                  />
-                </div>
-
-                <button className="w-full mt-6 sm:mt-8 px-12 py-4 sm:py-[18px] bg-maroon text-white border-none font-heading text-[14px] sm:text-base tracking-[3px] uppercase cursor-pointer transition-all duration-400 hover:bg-maroon-dark active:scale-[0.98]">
-                  {t("placeOrder")}
-                </button>
-                <p className="font-body text-xs text-gray text-center mt-3 font-light">
-                  {t("orderNote")}
-                </p>
+                    <p className="font-body text-xs text-gray text-center mt-3 font-light">
+                      {t("orderNote")}
+                    </p>
+                  </>
+                )}
               </div>
               {/* Safe area bottom padding */}
               <div className="h-[env(safe-area-inset-bottom,0px)]" />

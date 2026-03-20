@@ -1,0 +1,88 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../lib/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Reservation {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name      String
+  email     String
+  phone     String
+  date      DateTime @db.Date
+  time      String
+  guests    Int
+  period    String
+  notes     String?
+  status    String   @default("pending")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz()
+
+  @@map("reservations")
+}
+
+model Contact {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name      String
+  email     String
+  message   String
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz()
+
+  @@map("contacts")
+}
+
+model Order {
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  orderNumber     Int      @default(autoincrement()) @map("order_number")
+  orderType       String   @default("pickup") @map("order_type")
+  name            String
+  phone           String
+  email           String
+  pickupTime      String?  @map("pickup_time")
+  notes           String?
+  items           Json
+  total           Decimal  @db.Decimal(10, 2)
+  discountCode    String?  @map("discount_code")
+  discountAmount  Decimal  @default(0) @map("discount_amount") @db.Decimal(10, 2)
+  deliveryAddress Json?    @map("delivery_address")
+  deliveryFee     Decimal  @default(0) @map("delivery_fee") @db.Decimal(10, 2)
+  status          String   @default("pending")
+  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz()
+
+  @@map("orders")
+}
+
+model GiftCard {
+  id             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  code           String    @unique
+  amount         Decimal   @db.Decimal(10, 2)
+  balance        Decimal   @db.Decimal(10, 2)
+  senderName     String?   @map("sender_name")
+  senderEmail    String?   @map("sender_email")
+  recipientName  String?   @map("recipient_name")
+  recipientEmail String?   @map("recipient_email")
+  message        String?
+  sendDate       DateTime? @map("send_date") @db.Date
+  status         String    @default("active")
+  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz()
+
+  @@map("gift_cards")
+}
+
+model Coupon {
+  id            String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  code          String    @unique
+  discountType  String    @map("discount_type")
+  discountValue Decimal?  @map("discount_value") @db.Decimal(10, 2)
+  minOrder      Decimal?  @map("min_order") @db.Decimal(10, 2)
+  maxUses       Int?      @map("max_uses")
+  usedCount     Int       @default(0) @map("used_count")
+  validFrom     DateTime? @map("valid_from") @db.Timestamptz()
+  validUntil    DateTime? @map("valid_until") @db.Timestamptz()
+  active        Boolean   @default(true)
+
+  @@map("coupons")
+}
