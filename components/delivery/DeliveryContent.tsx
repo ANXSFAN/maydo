@@ -178,6 +178,26 @@ export default function DeliveryContent() {
     }
   }, [activeCategory]);
 
+  useEffect(() => {
+    const observers: IntersectionObserver[] = [];
+    const cats = visibleCategories;
+    cats.forEach((cat) => {
+      const el = document.getElementById(`cat-${cat}`);
+      if (!el) return;
+      const observer = new IntersectionObserver(
+        ([entry]) => {
+          if (entry.isIntersecting) {
+            setActiveCategory(cat);
+          }
+        },
+        { rootMargin: "-120px 0px -60% 0px", threshold: 0 }
+      );
+      observer.observe(el);
+      observers.push(observer);
+    });
+    return () => observers.forEach((o) => o.disconnect());
+  }, [visibleCategories]);
+
   const validateCheckout = () => {
     const errs: Record<string, boolean> = {};
     if (!checkoutName.trim()) errs.name = true;
@@ -320,7 +340,9 @@ export default function DeliveryContent() {
                     onClick={() => {
                       setActiveCategory(cat);
                       setShowCatMenu(false);
-                      document.getElementById(`cat-${cat}`)?.scrollIntoView({ behavior: "smooth", block: "start" });
+                      setTimeout(() => {
+                        document.getElementById(`cat-${cat}`)?.scrollIntoView({ behavior: "smooth", block: "start" });
+                      }, 250);
                     }}
                     className={`w-full text-left px-5 py-3.5 font-body text-[14px] border-none cursor-pointer transition-colors flex items-center justify-between ${
                       activeCategory === cat ? "bg-camel/10 text-maroon font-medium" : "bg-transparent text-ink/70 active:bg-beige/30"

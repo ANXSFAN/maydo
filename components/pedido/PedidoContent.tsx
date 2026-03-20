@@ -149,6 +149,27 @@ export default function PedidoContent() {
     }
   }, [activeCategory]);
 
+  // Auto-highlight category on scroll via IntersectionObserver
+  useEffect(() => {
+    const observers: IntersectionObserver[] = [];
+    const cats = visibleCategories;
+    cats.forEach((cat) => {
+      const el = document.getElementById(`cat-${cat}`);
+      if (!el) return;
+      const observer = new IntersectionObserver(
+        ([entry]) => {
+          if (entry.isIntersecting) {
+            setActiveCategory(cat);
+          }
+        },
+        { rootMargin: "-120px 0px -60% 0px", threshold: 0 }
+      );
+      observer.observe(el);
+      observers.push(observer);
+    });
+    return () => observers.forEach((o) => o.disconnect());
+  }, [visibleCategories]);
+
   const finalTotal = Math.max(0, cartTotal - couponDiscount);
 
   const validateCoupon = async () => {
@@ -315,9 +336,11 @@ export default function PedidoContent() {
                     onClick={() => {
                       setActiveCategory(cat);
                       setShowCatMenu(false);
-                      document
-                        .getElementById(`cat-${cat}`)
-                        ?.scrollIntoView({ behavior: "smooth", block: "start" });
+                      setTimeout(() => {
+                        document
+                          .getElementById(`cat-${cat}`)
+                          ?.scrollIntoView({ behavior: "smooth", block: "start" });
+                      }, 250);
                     }}
                     className={`
                       w-full text-left px-5 py-3.5 font-body text-[14px] border-none cursor-pointer transition-colors flex items-center justify-between
