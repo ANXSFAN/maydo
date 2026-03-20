@@ -278,20 +278,19 @@ export default function PedidoContent() {
 
   return (
     <>
-      {/* Sticky top nav for mobile: section tabs + category dropdown */}
-      <div className="lg:hidden sticky top-0 z-30 bg-cream/95 backdrop-blur-md border-b border-beige/50">
+      {/* Sticky top nav for mobile: section tabs + horizontal category scroll */}
+      <div className="lg:hidden sticky top-[60px] z-40 bg-cream/95 backdrop-blur-md border-b border-beige/50">
+        {/* Section tabs */}
         <div className="flex">
-          {/* Section tabs */}
           {(["all", "sushi", "cocina"] as Section[]).map((sec) => (
             <button
               key={sec}
               onClick={() => {
                 setActiveSection(sec);
                 setActiveCategory(null);
-                setShowCatMenu(false);
               }}
               className={`
-                flex-1 py-3.5 text-[12px] tracking-[2px] uppercase font-body font-light transition-all duration-200 cursor-pointer border-none
+                flex-1 py-3 text-[12px] tracking-[2px] uppercase font-body font-light transition-all duration-200 cursor-pointer border-none
                 ${
                   activeSection === sec
                     ? "bg-maroon text-white"
@@ -302,65 +301,34 @@ export default function PedidoContent() {
               {t(sec)}
             </button>
           ))}
-          {/* Category dropdown trigger */}
-          <button
-            onClick={() => setShowCatMenu(!showCatMenu)}
-            className="px-4 flex items-center gap-1.5 border-none bg-transparent text-maroon cursor-pointer active:bg-beige/30"
-          >
-            <span className="font-body text-[11px] tracking-[1px] uppercase">
-              {(activeCategory && dishI18n[activeCategory]?.label) || t("catLabel")}
-            </span>
-            <svg
-              width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"
-              className={`transition-transform duration-200 ${showCatMenu ? "rotate-180" : ""}`}
-            >
-              <path d="M3 4.5L6 7.5L9 4.5" />
-            </svg>
-          </button>
         </div>
-
-        {/* Category dropdown menu */}
-        <AnimatePresence>
-          {showCatMenu && (
-            <motion.div
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: "auto", opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-              transition={{ duration: 0.2 }}
-              className="overflow-hidden border-t border-beige/30"
+        {/* Horizontal category scroll bar */}
+        <div ref={catNavRef} className="flex gap-2 px-3 py-2 overflow-x-auto scrollbar-hide border-t border-beige/30">
+          {visibleCategories.map((cat) => (
+            <button
+              key={cat}
+              data-cat={cat}
+              onClick={() => {
+                setActiveCategory(cat);
+                setTimeout(() => {
+                  document
+                    .getElementById(`cat-${cat}`)
+                    ?.scrollIntoView({ behavior: "smooth", block: "start" });
+                }, 50);
+              }}
+              className={`
+                px-3 py-1.5 text-[11px] tracking-[0.5px] font-body font-light border transition-all duration-200 cursor-pointer whitespace-nowrap shrink-0
+                ${
+                  activeCategory === cat
+                    ? "bg-camel text-white border-camel"
+                    : "bg-white text-gray border-beige active:border-camel"
+                }
+              `}
             >
-              <div className="max-h-[50vh] overflow-y-auto bg-white">
-                {visibleCategories.map((cat) => (
-                  <button
-                    key={cat}
-                    onClick={() => {
-                      setActiveCategory(cat);
-                      setShowCatMenu(false);
-                      setTimeout(() => {
-                        document
-                          .getElementById(`cat-${cat}`)
-                          ?.scrollIntoView({ behavior: "smooth", block: "start" });
-                      }, 250);
-                    }}
-                    className={`
-                      w-full text-left px-5 py-3.5 font-body text-[14px] border-none cursor-pointer transition-colors flex items-center justify-between
-                      ${
-                        activeCategory === cat
-                          ? "bg-camel/10 text-maroon font-medium"
-                          : "bg-transparent text-ink/70 active:bg-beige/30"
-                      }
-                    `}
-                  >
-                    <span>{dishI18n[cat]?.label || cat}</span>
-                    <span className="text-[12px] text-gray font-light">
-                      {MENU_DATA[cat].items.length}
-                    </span>
-                  </button>
-                ))}
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
+              {dishI18n[cat]?.label || cat}
+            </button>
+          ))}
+        </div>
       </div>
 
       <section className="py-[clamp(20px,8vw,100px)] px-[clamp(12px,4vw,40px)] bg-cream">
@@ -423,7 +391,7 @@ export default function PedidoContent() {
                 {visibleCategories.map((catKey) => {
                   const category = MENU_DATA[catKey];
                   return (
-                    <div key={catKey} id={`cat-${catKey}`} className="scroll-mt-[120px] lg:scroll-mt-24">
+                    <div key={catKey} id={`cat-${catKey}`} className="scroll-mt-[170px] lg:scroll-mt-24">
                       <div className="flex items-center gap-3 sm:gap-4 mb-4 sm:mb-5">
                         <h3 className="text-[18px] sm:text-[22px] font-light text-maroon whitespace-nowrap">
                           {dishI18n[catKey]?.label || catKey}
