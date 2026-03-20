@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { useTranslations, useLocale } from "next-intl";
 import { Link, useRouter, usePathname } from "@/i18n/navigation";
 import { motion, AnimatePresence } from "framer-motion";
+import Image from "next/image";
 
 const mainNav = [
   { key: "home", href: "/" },
@@ -70,13 +71,14 @@ export default function Navbar() {
         style={{ height: solid ? 70 : 90 }}
       >
         {/* Logo */}
-        <Link href="/" className="flex items-center gap-3 no-underline">
-          <span className="font-heading text-[28px] font-light text-white tracking-[8px]">
-            MAYDO
-          </span>
-          <span className="text-sm text-camel font-light opacity-80">
-            日式
-          </span>
+        <Link href="/" className="flex items-center no-underline">
+          <Image
+            src="/images/logo.svg"
+            alt="Sushi Maydo"
+            width={44}
+            height={44}
+            className="brightness-0 invert"
+          />
         </Link>
 
         {/* Hamburger - mobile */}

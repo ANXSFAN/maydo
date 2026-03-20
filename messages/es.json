@@ -16,10 +16,10 @@
     "langSwitch": "中文"
   },
   "Hero": {
-    "sub": "L'Hospitalet de Llobregat, Barcelona",
+    "sub": "Restaurante Japonés · Buffet Libre",
     "title": "MAYDO",
     "tagline": "日本料理の芸術",
-    "desc": "Donde la tradición japonesa se encuentra con la elegancia mediterránea",
+    "desc": "Donde la tradición japonesa se encuentra con la elegancia mediterránea. L'Hospitalet de Llobregat, Barcelona.",
     "cta": "Reservar mesa",
     "cta2": "Ver carta",
     "scroll": "SCROLL"
@@ -81,6 +81,8 @@
     "hours3": "20:30 - 23:30",
     "hours4": "Lunes cerrado",
     "contact": "Contacto",
+    "phone": "+34 936 844 036",
+    "email": "sushimaydobcnplazaeuropa@gmail.com",
     "location": "Ubicación",
     "address": "Pl. d'Europa, 102, 08902\nL'Hospitalet de Llobregat\nBarcelona",
     "copyright": "© 2026 Sushi Maydo. All rights reserved.",

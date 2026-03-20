@@ -5,7 +5,7 @@ import { useTranslations } from "next-intl";
 import FadeIn from "@/components/ui/FadeIn";
 import DiamondDivider from "@/components/ui/DiamondDivider";
 
-const ABOUT_IMAGE = "/images/about.jpeg";
+const ABOUT_IMAGE = "/images/about.avif";
 
 export default function About() {
   const t = useTranslations("About");

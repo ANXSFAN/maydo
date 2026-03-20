@@ -5,12 +5,17 @@ import { useTranslations } from "next-intl";
 import FadeIn from "@/components/ui/FadeIn";
 import DiamondDivider from "@/components/ui/DiamondDivider";
 
-const GALLERY_IMAGES = {
-  gallery1: "/images/gallery1.jpg",
-  gallery2: "/images/gallery2.jpg",
-  gallery3: "/images/gallery3.jpeg",
-  gallery4: "/images/gallery4.jpeg",
-};
+const GALLERY_IMAGES = [
+  "/images/gallery-1.jpg",
+  "/images/gallery-2.jpg",
+  "/images/gallery-3.jpg",
+  "/images/gallery-4.jpg",
+  "/images/gallery-5.jpg",
+  "/images/gallery-6.jpg",
+  "/images/gallery-7.jpg",
+  "/images/gallery-8.jpg",
+  "/images/gallery-9.jpg",
+];
 
 function GalleryItem({
   src,
@@ -28,10 +33,10 @@ function GalleryItem({
           src={src}
           alt="Gallery"
           fill
-          className="object-cover transition-transform duration-700 group-hover:scale-[1.06]"
-          sizes="(max-width: 768px) 50vw, 400px"
+          className="object-cover transition-transform duration-700 group-hover:scale-[1.08]"
+          sizes="(max-width: 768px) 100vw, 400px"
         />
-        <div className="absolute inset-0 bg-maroon/0 transition-colors duration-500 group-hover:bg-maroon/25" />
+        <div className="absolute inset-0 bg-maroon/0 transition-all duration-500 group-hover:bg-maroon/20" />
       </div>
     </FadeIn>
   );
@@ -43,8 +48,13 @@ export default function Gallery() {
   return (
     <section
       id="gallery"
-      className="py-[clamp(80px,10vw,120px)] px-10 bg-cream"
+      className="py-[clamp(80px,10vw,140px)] px-10 bg-cream relative overflow-hidden"
     >
+      {/* Decorative kanji watermark */}
+      <div className="absolute top-[10%] right-[5%] text-[200px] font-light text-maroon/[0.03] font-cjk select-none leading-none">
+        美
+      </div>
+
       <div className="max-w-[1200px] mx-auto">
         <FadeIn>
           <div className="text-center mb-[60px]">
@@ -58,19 +68,26 @@ export default function Gallery() {
           </div>
         </FadeIn>
 
-        <div className="grid grid-cols-3 grid-rows-[240px_240px] gap-4 max-md:grid-cols-2 max-md:grid-rows-[200px_200px_200px]">
-          <GalleryItem
-            src={GALLERY_IMAGES.gallery1}
-            className="row-span-2 max-md:row-span-1"
-            delay={0}
-          />
-          <GalleryItem src={GALLERY_IMAGES.gallery2} delay={0.1} />
-          <GalleryItem src={GALLERY_IMAGES.gallery3} delay={0.2} />
-          <GalleryItem
-            src={GALLERY_IMAGES.gallery4}
-            className="col-span-2 max-md:col-span-1"
-            delay={0.15}
-          />
+        {/* Masonry-style grid: 3 columns with varied heights */}
+        <div className="grid grid-cols-3 gap-3 max-md:grid-cols-1">
+          {/* Column 1 */}
+          <div className="flex flex-col gap-3">
+            <GalleryItem src={GALLERY_IMAGES[0]} className="h-[280px]" delay={0} />
+            <GalleryItem src={GALLERY_IMAGES[1]} className="h-[200px]" delay={0.1} />
+            <GalleryItem src={GALLERY_IMAGES[2]} className="h-[240px]" delay={0.2} />
+          </div>
+          {/* Column 2 — offset for stagger effect */}
+          <div className="flex flex-col gap-3 mt-10 max-md:mt-0">
+            <GalleryItem src={GALLERY_IMAGES[3]} className="h-[220px]" delay={0.05} />
+            <GalleryItem src={GALLERY_IMAGES[4]} className="h-[280px]" delay={0.15} />
+            <GalleryItem src={GALLERY_IMAGES[5]} className="h-[200px]" delay={0.25} />
+          </div>
+          {/* Column 3 */}
+          <div className="flex flex-col gap-3">
+            <GalleryItem src={GALLERY_IMAGES[6]} className="h-[200px]" delay={0.1} />
+            <GalleryItem src={GALLERY_IMAGES[7]} className="h-[260px]" delay={0.2} />
+            <GalleryItem src={GALLERY_IMAGES[8]} className="h-[240px]" delay={0.3} />
+          </div>
         </div>
       </div>
     </section>

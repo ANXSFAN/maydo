@@ -16,10 +16,10 @@
     "langSwitch": "ES"
   },
   "Hero": {
-    "sub": "巴塞罗那 L'Hospitalet de Llobregat",
+    "sub": "日式料理 · 自助餐厅",
     "title": "MAYDO",
     "tagline": "日本料理の芸術",
-    "desc": "日本传统与地中海优雅的邂逅",
+    "desc": "日本传统与地中海优雅的邂逅。巴塞罗那 L'Hospitalet de Llobregat。",
     "cta": "预订座位",
     "cta2": "查看菜单",
     "scroll": "SCROLL"
@@ -81,6 +81,8 @@
     "hours3": "20:30 - 23:30",
     "hours4": "周一休息",
     "contact": "联系方式",
+    "phone": "+34 936 844 036",
+    "email": "sushimaydobcnplazaeuropa@gmail.com",
     "location": "地址",
     "address": "Pl. d'Europa, 102, 08902\nL'Hospitalet de Llobregat\n巴塞罗那",
     "copyright": "© 2026 Sushi Maydo. All rights reserved.",

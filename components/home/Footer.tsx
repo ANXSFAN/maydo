@@ -2,6 +2,7 @@
 
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
+import Image from "next/image";
 import DiamondDivider from "@/components/ui/DiamondDivider";
 
 const socials = ["Instagram", "Facebook", "Google"];
@@ -26,12 +27,15 @@ export default function Footer() {
         <div className="grid grid-cols-[2fr_1fr_1fr_1fr] gap-[60px] mb-[60px] max-md:grid-cols-1 max-md:text-center">
           {/* Brand */}
           <div>
-            <Link href="/" className="no-underline">
-              <span className="text-4xl font-light tracking-[10px] block mb-2 text-white">
-                MAYDO
-              </span>
+            <Link href="/" className="no-underline inline-block mb-3">
+              <Image
+                src="/images/logo.svg"
+                alt="Sushi Maydo"
+                width={80}
+                height={80}
+                className="brightness-0 invert"
+              />
             </Link>
-            <span className="text-base text-camel font-light">日式</span>
             <DiamondDivider className="text-camel/30" />
             <p className="font-body text-[13px] text-white/40 leading-relaxed font-light max-w-[300px] max-md:mx-auto">
               {t("tagline")}
@@ -73,11 +77,14 @@ export default function Footer() {
               {t("contact")}
             </h4>
             <p className="font-body text-[13px] text-white/50 leading-8 font-light">
-              +34 936 844 036
-              <br />
-              sushimaydobcn
-              <br />
-              plazaeuropa@gmail.com
+              <a href={`tel:${t("phone")}`} className="text-white/50 no-underline transition-colors hover:text-camel">
+                {t("phone")}
+              </a>
+            </p>
+            <p className="font-body text-[13px] text-white/50 leading-8 font-light break-all">
+              <a href={`mailto:${t("email")}`} className="text-white/50 no-underline transition-colors hover:text-camel">
+                {t("email")}
+              </a>
             </p>
           </div>
 
