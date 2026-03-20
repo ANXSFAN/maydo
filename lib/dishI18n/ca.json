@@ -1,0 +1,271 @@
+{
+  "TARTAR": {
+    "label": "Tartars",
+    "items": [
+      { "name": "Tartar de Salmó", "desc": "Salmó, Salsa Ponzu" },
+      { "name": "Tartar de Tonyina", "desc": "Tonyina, Salsa Ponzu" },
+      { "name": "Black Tartar", "desc": "Arròs negre, Salmó, Alvocat, Pasta Kataifi, Salsa de mango" },
+      { "name": "White Tartar", "desc": "Salmó, Alvocat, Ametlles, Salsa Teriyaki" },
+      { "name": "Tartar Mango", "desc": "Salmó, Alvocat, Mango, Salsa de mango" },
+      { "name": "Tartar Amaebi", "desc": "Salmó, Alvocat, Salsa de mango" },
+      { "name": "Tartar Mango Roll", "desc": "" }
+    ]
+  },
+  "ENSALADAS": {
+    "label": "Amanides",
+    "items": [
+      { "name": "Pop amb Rucula", "desc": "" },
+      { "name": "Amanida Mixta", "desc": "" },
+      { "name": "Amanida de Pollastre Fregit", "desc": "" },
+      { "name": "Amanida de Marisc", "desc": "" },
+      { "name": "Goma Wakame", "desc": "" },
+      { "name": "Wakame", "desc": "" },
+      { "name": "Edamame", "desc": "" }
+    ]
+  },
+  "SUNOMONO": {
+    "label": "Sunomono",
+    "items": [
+      { "name": "Tako Su", "desc": "" },
+      { "name": "Sake Su", "desc": "" },
+      { "name": "Sakana Su", "desc": "" }
+    ]
+  },
+  "CHIRASHI": {
+    "label": "Chirashi",
+    "items": [
+      { "name": "Sake Don", "desc": "" },
+      { "name": "Tekka Don", "desc": "" },
+      { "name": "Chirashi Mixt", "desc": "" }
+    ]
+  },
+  "HOSOMAKI (6p)": {
+    "label": "Hosomaki (6p)",
+    "items": [
+      { "name": "Hoso Sake", "desc": "Salmó" },
+      { "name": "Hoso Tekka", "desc": "Tonyina" },
+      { "name": "Hoso Alvocat", "desc": "" },
+      { "name": "Hoso Kappa", "desc": "Cogombre" },
+      { "name": "Hoso Ebi", "desc": "Gamba Cuita" },
+      { "name": "Hoso California", "desc": "Cranc, Cogombre" },
+      { "name": "Hoso Sake Fregit (8p)", "desc": "Salmó Fregit, Filadelfia, Salsa Teriyaki" },
+      { "name": "Hoso Spicy Fregit (8p)", "desc": "Salmó picant, Tobiko, Ceba tendra, Maionesa, Salsa Teriyaki" },
+      { "name": "Hoso Fruita Mango (8p)", "desc": "Alvocat, Filadelfia, Mango" }
+    ]
+  },
+  "TEMAKI": {
+    "label": "Temaki",
+    "items": [
+      { "name": "Temaki Sake", "desc": "Salmó, Alvocat" },
+      { "name": "Temaki Tekka", "desc": "Tonyina, Alvocat" },
+      { "name": "Temaki California", "desc": "Cranc, Alvocat, Maionesa" },
+      { "name": "Temaki Philadelphia", "desc": "Salmó, Alvocat, Filadelfia" },
+      { "name": "Temaki Spicy Sake", "desc": "Salmó picant, Tobiko, Ceba tendra, Maionesa" },
+      { "name": "Temaki Spicy Tekka", "desc": "Tonyina picant, Tobiko, Ceba tendra, Maionesa" },
+      { "name": "Temaki Miura", "desc": "Salmó a la graella, Enciam, Filadelfia" },
+      { "name": "Temaki Ebi", "desc": "Gamba tempura, Alvocat, Maionesa" },
+      { "name": "Temaki Mango", "desc": "Mango, Enciam, Filadelfia, Salsa de mango" }
+    ]
+  },
+  "URAMAKI (8p)": {
+    "label": "Uramaki (8p)",
+    "items": [
+      { "name": "Uramaki Sake", "desc": "" },
+      { "name": "Uramaki Tonyina", "desc": "" },
+      { "name": "Uramaki Yasai", "desc": "" },
+      { "name": "Uramaki Spicy Sake", "desc": "" },
+      { "name": "Uramaki Spicy Tonyina", "desc": "" },
+      { "name": "Uramaki Ebiten", "desc": "" },
+      { "name": "Uramaki California", "desc": "" },
+      { "name": "Uramaki Miura", "desc": "" },
+      { "name": "Uramaki Hot Tonyina", "desc": "" },
+      { "name": "Uramaki Tori", "desc": "" },
+      { "name": "Uramaki Philadelphia", "desc": "" },
+      { "name": "Uramaki Tigre", "desc": "" },
+      { "name": "Uramaki Black Ebiten", "desc": "" },
+      { "name": "Uramaki Black Spicy Salmó", "desc": "" },
+      { "name": "Uramaki Black Sake Philadelphia", "desc": "" },
+      { "name": "Uramaki Black Sake", "desc": "" },
+      { "name": "Uramaki Onion Roll", "desc": "" },
+      { "name": "Uramaki Alvocat Roll", "desc": "" },
+      { "name": "Uramaki Rainbow Roll", "desc": "" },
+      { "name": "Uramaki Especial Roll", "desc": "" },
+      { "name": "Uramaki Salmó Plus", "desc": "" },
+      { "name": "Uramaki Rucola Roll", "desc": "" },
+      { "name": "Uramaki Ebi Roll", "desc": "" },
+      { "name": "Wakame Roll", "desc": "" },
+      { "name": "Rock Roll", "desc": "" },
+      { "name": "Maydo Miura", "desc": "" },
+      { "name": "Uramaki Mango Roll", "desc": "" },
+      { "name": "Uramaki Mango Especial Roll", "desc": "" },
+      { "name": "Uramaki Arc de Sant Marti", "desc": "" },
+      { "name": "Uramaki Ametlla", "desc": "" },
+      { "name": "Uramaki Unagi", "desc": "" }
+    ]
+  },
+  "FUTOMAKI (10p)": {
+    "label": "Futomaki (10p)",
+    "items": [
+      { "name": "Futo Tempura", "desc": "" },
+      { "name": "Futo California", "desc": "" },
+      { "name": "Furaido Roll", "desc": "" },
+      { "name": "Sushi Petit", "desc": "" },
+      { "name": "Sushi Mitja", "desc": "" },
+      { "name": "Vaixell x1", "desc": "" }
+    ]
+  },
+  "SASHIMI": {
+    "label": "Sashimi",
+    "items": [
+      { "name": "Sashimi Sake (8p)", "desc": "" },
+      { "name": "Sashimi Sake Maguro (8p)", "desc": "4p Salmó, 4p Tonyina" },
+      { "name": "Sashimi Mixt (12p)", "desc": "4p Salmó, 4p Tonyina, 4p Llobarro" },
+      { "name": "Sashimi Amaebi (3p)", "desc": "" },
+      { "name": "Sashimi Especial Maydo", "desc": "1 Ostra, 1 Escamarlà, 1 Gamba dolça, 3 Salmó, 3 Tonyina, 3 Llobarro" },
+      { "name": "Escamarlà Fruita (2p)", "desc": "Escamarlà amb salsa de maracujà" }
+    ]
+  },
+  "CARPACCIO (8p)": {
+    "label": "Carpaccio (8p)",
+    "items": [
+      { "name": "Carpaccio Sake", "desc": "" },
+      { "name": "Carpaccio Maguro", "desc": "" },
+      { "name": "Carpaccio Suzuki", "desc": "" },
+      { "name": "Carpaccio Mixtos", "desc": "" }
+    ]
+  },
+  "NIGIRI (2p)": {
+    "label": "Nigiri (2p)",
+    "items": [
+      { "name": "Nigiri Sake", "desc": "" },
+      { "name": "Nigiri Suzuki", "desc": "" },
+      { "name": "Nigiri Ebi", "desc": "" },
+      { "name": "Nigiri Maguro", "desc": "" },
+      { "name": "Nigiri Unagi", "desc": "" },
+      { "name": "Nigiri Alvocat", "desc": "" },
+      { "name": "Nigiri Tako", "desc": "" },
+      { "name": "Nigiri Flamejat", "desc": "" }
+    ]
+  },
+  "ONIGIRI": {
+    "label": "Onigiri",
+    "items": [
+      { "name": "Onigiri Sake", "desc": "" },
+      { "name": "Onigiri Miura", "desc": "" },
+      { "name": "Onigiri Spicy Sake", "desc": "" },
+      { "name": "Onigiri Ebi", "desc": "" }
+    ]
+  },
+  "GUNGAN (2p)": {
+    "label": "Gunkan (2p)",
+    "items": [
+      { "name": "Gunkan Tobiko", "desc": "" },
+      { "name": "Gunkan Sake", "desc": "" },
+      { "name": "Gunkan Spicy Maguro", "desc": "" },
+      { "name": "Gunkan Spicy Sake", "desc": "" },
+      { "name": "Gunkan Philadelphia", "desc": "" },
+      { "name": "Sake Ebi Roll", "desc": "" },
+      { "name": "Gunkan Sake Flamejat", "desc": "" },
+      { "name": "Gunkan Ebiten Plus", "desc": "" }
+    ]
+  },
+  "ARROZ": {
+    "label": "Arròs",
+    "items": [
+      { "name": "Arròs Blanc", "desc": "" },
+      { "name": "Yakimeshi Cantonès", "desc": "" },
+      { "name": "Yakimeshi Pollastre", "desc": "" },
+      { "name": "Yakimeshi Gamba", "desc": "" },
+      { "name": "Yakimeshi Vedella", "desc": "" }
+    ]
+  },
+  "SOBA FIDEOS": {
+    "label": "Fideus",
+    "items": [
+      { "name": "Yakisoba", "desc": "" },
+      { "name": "Udon Vegetal", "desc": "" },
+      { "name": "Udon Gamba", "desc": "" },
+      { "name": "Fideus Gambes", "desc": "" },
+      { "name": "Fideus Vegetal", "desc": "" },
+      { "name": "Espagueti Gambes", "desc": "" },
+      { "name": "Ramen de Carn", "desc": "" },
+      { "name": "Ramen de Gambes", "desc": "" }
+    ]
+  },
+  "FRITURA": {
+    "label": "Fregits",
+    "items": [
+      { "name": "Peces de Cranc Fregides (4p)", "desc": "" },
+      { "name": "Torikatsu", "desc": "" },
+      { "name": "Ebi Tempura (5p)", "desc": "" },
+      { "name": "Gambes Arrebossades (6p)", "desc": "" },
+      { "name": "Tori Karaage (4p)", "desc": "Nuggets" },
+      { "name": "Calamars Fregits (6p)", "desc": "" },
+      { "name": "Tempura Mixta", "desc": "" },
+      { "name": "Croquetes (4p)", "desc": "" },
+      { "name": "Rotllet de Primavera (4p)", "desc": "" },
+      { "name": "Rotllets de Gambes (4p)", "desc": "" },
+      { "name": "Carxofes Fregides", "desc": "" },
+      { "name": "Takoyaki (5p)", "desc": "" },
+      { "name": "Anec Pequinès", "desc": "" },
+      { "name": "Patates Fregides", "desc": "" },
+      { "name": "Mantou Fregit (2p)", "desc": "" }
+    ]
+  },
+  "TEPPANYAKI": {
+    "label": "Teppanyaki",
+    "items": [
+      { "name": "Guabao Pollastre", "desc": "" },
+      { "name": "Guabao Sake", "desc": "" },
+      { "name": "Tataki Sake (8p)", "desc": "" },
+      { "name": "Tataki Maguro (8p)", "desc": "" },
+      { "name": "Yaki Tori (4p)", "desc": "" },
+      { "name": "Yaki Ebi (4p)", "desc": "" },
+      { "name": "Oebi no Shioaki (4p)", "desc": "" },
+      { "name": "Esparrecs a la Planxa", "desc": "" },
+      { "name": "Cloïsses", "desc": "" },
+      { "name": "Salmó amb Julivert (2p)", "desc": "" },
+      { "name": "Vedella Maydo (8p)", "desc": "" },
+      { "name": "Xampinyons", "desc": "" }
+    ]
+  },
+  "SOPA": {
+    "label": "Sopes",
+    "items": [
+      { "name": "Sopa Miso", "desc": "" },
+      { "name": "Sopa Agrepicant", "desc": "" }
+    ]
+  },
+  "VAPOR": {
+    "label": "Al vapor",
+    "items": [
+      { "name": "Gyozas al Vapor (4p)", "desc": "" },
+      { "name": "Gyozas a la Planxa (4p)", "desc": "" },
+      { "name": "Gyozas Shaomai (4p)", "desc": "" },
+      { "name": "Gyozas Vegetal al Vapor (4p)", "desc": "" },
+      { "name": "Ebi Gyozas (4p)", "desc": "" },
+      { "name": "Bao a la Planxa (4p)", "desc": "" },
+      { "name": "Tubao (2p)", "desc": "" }
+    ]
+  },
+  "PLATOS CHINOS": {
+    "label": "Plats xinesos",
+    "items": [
+      { "name": "Gambes a la Sal i Pebre (6p)", "desc": "" },
+      { "name": "Gambes a l'All (4p)", "desc": "" },
+      { "name": "Gamba Picant", "desc": "" },
+      { "name": "Gambes al Curri", "desc": "" },
+      { "name": "Porc Agredolc", "desc": "" },
+      { "name": "Gambes amb Bambú", "desc": "" },
+      { "name": "Pollastre Picant", "desc": "" },
+      { "name": "Pollastre al Curri", "desc": "" },
+      { "name": "Pollastre amb Ametlles", "desc": "" },
+      { "name": "Pollastre amb Bambú", "desc": "" },
+      { "name": "Vedella al Curri", "desc": "" },
+      { "name": "Vedella Picant", "desc": "" },
+      { "name": "Vedella amb Bambú", "desc": "" },
+      { "name": "Paella de Coliflor", "desc": "" },
+      { "name": "Paella de Tentacles", "desc": "" }
+    ]
+  }
+}

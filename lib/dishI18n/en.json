@@ -1,0 +1,271 @@
+{
+  "TARTAR": {
+    "label": "Tartars",
+    "items": [
+      { "name": "Salmon Tartar", "desc": "Salmon, Ponzu Sauce" },
+      { "name": "Tuna Tartar", "desc": "Tuna, Ponzu Sauce" },
+      { "name": "Black Tartar", "desc": "Black Rice, Salmon, Avocado, Kataifi Pastry, Mango Sauce" },
+      { "name": "White Tartar", "desc": "Salmon, Avocado, Almonds, Teriyaki Sauce" },
+      { "name": "Mango Tartar", "desc": "Salmon, Avocado, Mango, Mango Sauce" },
+      { "name": "Tartar Amaebi", "desc": "Salmon, Avocado, Mango Sauce" },
+      { "name": "Tartar Mango Roll", "desc": "" }
+    ]
+  },
+  "ENSALADAS": {
+    "label": "Salads",
+    "items": [
+      { "name": "Octopus with Arugula", "desc": "" },
+      { "name": "Mixed Salad", "desc": "" },
+      { "name": "Fried Chicken Salad", "desc": "" },
+      { "name": "Seafood Salad", "desc": "" },
+      { "name": "Goma Wakame", "desc": "" },
+      { "name": "Wakame", "desc": "" },
+      { "name": "Edamame", "desc": "" }
+    ]
+  },
+  "SUNOMONO": {
+    "label": "Sunomono",
+    "items": [
+      { "name": "Tako Su", "desc": "" },
+      { "name": "Sake Su", "desc": "" },
+      { "name": "Sakana Su", "desc": "" }
+    ]
+  },
+  "CHIRASHI": {
+    "label": "Chirashi",
+    "items": [
+      { "name": "Sake Don", "desc": "" },
+      { "name": "Tekka Don", "desc": "" },
+      { "name": "Mixed Chirashi", "desc": "" }
+    ]
+  },
+  "HOSOMAKI (6p)": {
+    "label": "Hosomaki (6p)",
+    "items": [
+      { "name": "Hoso Sake", "desc": "Salmon" },
+      { "name": "Hoso Tekka", "desc": "Tuna" },
+      { "name": "Hoso Avocado", "desc": "" },
+      { "name": "Hoso Kappa", "desc": "Cucumber" },
+      { "name": "Hoso Ebi", "desc": "Cooked Shrimp" },
+      { "name": "Hoso California", "desc": "Crab, Cucumber" },
+      { "name": "Hoso Sake Fried (8p)", "desc": "Fried Salmon, Philadelphia, Teriyaki Sauce" },
+      { "name": "Hoso Spicy Fried (8p)", "desc": "Spicy Salmon, Tobiko, Chives, Mayonnaise, Teriyaki Sauce" },
+      { "name": "Hoso Fruit Mango (8p)", "desc": "Avocado, Philadelphia, Mango" }
+    ]
+  },
+  "TEMAKI": {
+    "label": "Temaki",
+    "items": [
+      { "name": "Temaki Sake", "desc": "Salmon, Avocado" },
+      { "name": "Temaki Tekka", "desc": "Tuna, Avocado" },
+      { "name": "Temaki California", "desc": "Crab, Avocado, Mayonnaise" },
+      { "name": "Temaki Philadelphia", "desc": "Salmon, Avocado, Philadelphia" },
+      { "name": "Temaki Spicy Sake", "desc": "Spicy Salmon, Tobiko, Chives, Mayonnaise" },
+      { "name": "Temaki Spicy Tekka", "desc": "Spicy Tuna, Tobiko, Chives, Mayonnaise" },
+      { "name": "Temaki Miura", "desc": "Grilled Salmon, Lettuce, Philadelphia" },
+      { "name": "Temaki Ebi", "desc": "Shrimp Tempura, Avocado, Mayonnaise" },
+      { "name": "Temaki Mango", "desc": "Mango, Lettuce, Philadelphia, Mango Sauce" }
+    ]
+  },
+  "URAMAKI (8p)": {
+    "label": "Uramaki (8p)",
+    "items": [
+      { "name": "Uramaki Sake", "desc": "" },
+      { "name": "Uramaki Tuna", "desc": "" },
+      { "name": "Uramaki Yasai", "desc": "" },
+      { "name": "Uramaki Spicy Sake", "desc": "" },
+      { "name": "Uramaki Spicy Tuna", "desc": "" },
+      { "name": "Uramaki Ebiten", "desc": "" },
+      { "name": "Uramaki California", "desc": "" },
+      { "name": "Uramaki Miura", "desc": "" },
+      { "name": "Uramaki Hot Tuna", "desc": "" },
+      { "name": "Uramaki Tori", "desc": "" },
+      { "name": "Uramaki Philadelphia", "desc": "" },
+      { "name": "Uramaki Tiger", "desc": "" },
+      { "name": "Uramaki Black Ebiten", "desc": "" },
+      { "name": "Uramaki Black Spicy Salmon", "desc": "" },
+      { "name": "Uramaki Black Sake Philadelphia", "desc": "" },
+      { "name": "Uramaki Black Sake", "desc": "" },
+      { "name": "Uramaki Onion Roll", "desc": "" },
+      { "name": "Uramaki Avocado Roll", "desc": "" },
+      { "name": "Uramaki Rainbow Roll", "desc": "" },
+      { "name": "Uramaki Special Roll", "desc": "" },
+      { "name": "Uramaki Salmon Plus", "desc": "" },
+      { "name": "Uramaki Arugula Roll", "desc": "" },
+      { "name": "Uramaki Ebi Roll", "desc": "" },
+      { "name": "Wakame Roll", "desc": "" },
+      { "name": "Rock Roll", "desc": "" },
+      { "name": "Maydo Miura", "desc": "" },
+      { "name": "Uramaki Mango Roll", "desc": "" },
+      { "name": "Uramaki Mango Special Roll", "desc": "" },
+      { "name": "Uramaki Rainbow", "desc": "" },
+      { "name": "Uramaki Almond", "desc": "" },
+      { "name": "Uramaki Unagi", "desc": "" }
+    ]
+  },
+  "FUTOMAKI (10p)": {
+    "label": "Futomaki (10p)",
+    "items": [
+      { "name": "Futo Tempura", "desc": "" },
+      { "name": "Futo California", "desc": "" },
+      { "name": "Furaido Roll", "desc": "" },
+      { "name": "Small Sushi Platter", "desc": "" },
+      { "name": "Medium Sushi Platter", "desc": "" },
+      { "name": "Sushi Boat x1", "desc": "" }
+    ]
+  },
+  "SASHIMI": {
+    "label": "Sashimi",
+    "items": [
+      { "name": "Sashimi Sake (8p)", "desc": "" },
+      { "name": "Sashimi Sake Maguro (8p)", "desc": "4p Salmon, 4p Tuna" },
+      { "name": "Sashimi Mixed (12p)", "desc": "4p Salmon, 4p Tuna, 4p Sea Bass" },
+      { "name": "Sashimi Amaebi (3p)", "desc": "" },
+      { "name": "Sashimi Special Maydo", "desc": "1 Oyster, 1 Langoustine, 1 Sweet Shrimp, 3 Salmon, 3 Tuna, 3 Sea Bass" },
+      { "name": "Langoustine Fruit (2p)", "desc": "Langoustine with Passion Fruit Sauce" }
+    ]
+  },
+  "CARPACCIO (8p)": {
+    "label": "Carpaccio (8p)",
+    "items": [
+      { "name": "Carpaccio Sake", "desc": "" },
+      { "name": "Carpaccio Maguro", "desc": "" },
+      { "name": "Carpaccio Suzuki", "desc": "" },
+      { "name": "Carpaccio Mixed", "desc": "" }
+    ]
+  },
+  "NIGIRI (2p)": {
+    "label": "Nigiri (2p)",
+    "items": [
+      { "name": "Nigiri Sake", "desc": "" },
+      { "name": "Nigiri Suzuki", "desc": "" },
+      { "name": "Nigiri Ebi", "desc": "" },
+      { "name": "Nigiri Maguro", "desc": "" },
+      { "name": "Nigiri Unagi", "desc": "" },
+      { "name": "Nigiri Avocado", "desc": "" },
+      { "name": "Nigiri Tako", "desc": "" },
+      { "name": "Nigiri Flambeed", "desc": "" }
+    ]
+  },
+  "ONIGIRI": {
+    "label": "Onigiri",
+    "items": [
+      { "name": "Onigiri Sake", "desc": "" },
+      { "name": "Onigiri Miura", "desc": "" },
+      { "name": "Onigiri Spicy Sake", "desc": "" },
+      { "name": "Onigiri Ebi", "desc": "" }
+    ]
+  },
+  "GUNGAN (2p)": {
+    "label": "Gunkan (2p)",
+    "items": [
+      { "name": "Gunkan Tobiko", "desc": "" },
+      { "name": "Gunkan Sake", "desc": "" },
+      { "name": "Gunkan Spicy Maguro", "desc": "" },
+      { "name": "Gunkan Spicy Sake", "desc": "" },
+      { "name": "Gunkan Philadelphia", "desc": "" },
+      { "name": "Sake Ebi Roll", "desc": "" },
+      { "name": "Gunkan Sake Flambeed", "desc": "" },
+      { "name": "Gunkan Ebiten Plus", "desc": "" }
+    ]
+  },
+  "ARROZ": {
+    "label": "Rice",
+    "items": [
+      { "name": "White Rice", "desc": "" },
+      { "name": "Yakimeshi Cantonese", "desc": "" },
+      { "name": "Yakimeshi Chicken", "desc": "" },
+      { "name": "Yakimeshi Shrimp", "desc": "" },
+      { "name": "Yakimeshi Beef", "desc": "" }
+    ]
+  },
+  "SOBA FIDEOS": {
+    "label": "Noodles",
+    "items": [
+      { "name": "Yakisoba", "desc": "" },
+      { "name": "Udon Vegetable", "desc": "" },
+      { "name": "Udon Shrimp", "desc": "" },
+      { "name": "Shrimp Noodles", "desc": "" },
+      { "name": "Vegetable Noodles", "desc": "" },
+      { "name": "Shrimp Spaghetti", "desc": "" },
+      { "name": "Meat Ramen", "desc": "" },
+      { "name": "Shrimp Ramen", "desc": "" }
+    ]
+  },
+  "FRITURA": {
+    "label": "Fried",
+    "items": [
+      { "name": "Fried Crab Pieces (4p)", "desc": "" },
+      { "name": "Torikatsu", "desc": "" },
+      { "name": "Ebi Tempura (5p)", "desc": "" },
+      { "name": "Breaded Shrimp (6p)", "desc": "" },
+      { "name": "Tori Karaage (4p)", "desc": "Nuggets" },
+      { "name": "Fried Squid (6p)", "desc": "" },
+      { "name": "Mixed Tempura", "desc": "" },
+      { "name": "Croquettes (4p)", "desc": "" },
+      { "name": "Spring Rolls (4p)", "desc": "" },
+      { "name": "Shrimp Rolls (4p)", "desc": "" },
+      { "name": "Fried Artichokes", "desc": "" },
+      { "name": "Takoyaki (5p)", "desc": "" },
+      { "name": "Peking Duck", "desc": "" },
+      { "name": "French Fries", "desc": "" },
+      { "name": "Fried Mantou (2p)", "desc": "" }
+    ]
+  },
+  "TEPPANYAKI": {
+    "label": "Teppanyaki / Grill",
+    "items": [
+      { "name": "Guabao Chicken", "desc": "" },
+      { "name": "Guabao Sake", "desc": "" },
+      { "name": "Tataki Sake (8p)", "desc": "" },
+      { "name": "Tataki Maguro (8p)", "desc": "" },
+      { "name": "Yaki Tori (4p)", "desc": "" },
+      { "name": "Yaki Ebi (4p)", "desc": "" },
+      { "name": "Oebi no Shioaki (4p)", "desc": "" },
+      { "name": "Grilled Asparagus", "desc": "" },
+      { "name": "Clams", "desc": "" },
+      { "name": "Salmon with Parsley (2p)", "desc": "" },
+      { "name": "Beef Maydo (8p)", "desc": "" },
+      { "name": "Mushrooms", "desc": "" }
+    ]
+  },
+  "SOPA": {
+    "label": "Soups",
+    "items": [
+      { "name": "Miso Soup", "desc": "" },
+      { "name": "Hot and Sour Soup", "desc": "" }
+    ]
+  },
+  "VAPOR": {
+    "label": "Steamed",
+    "items": [
+      { "name": "Steamed Gyozas (4p)", "desc": "" },
+      { "name": "Pan-Fried Gyozas (4p)", "desc": "" },
+      { "name": "Gyozas Shumai (4p)", "desc": "" },
+      { "name": "Steamed Vegetable Gyozas (4p)", "desc": "" },
+      { "name": "Ebi Gyozas (4p)", "desc": "" },
+      { "name": "Pan-Fried Bao (4p)", "desc": "" },
+      { "name": "Tubao (2p)", "desc": "" }
+    ]
+  },
+  "PLATOS CHINOS": {
+    "label": "Chinese Dishes",
+    "items": [
+      { "name": "Salt and Pepper Shrimp (6p)", "desc": "" },
+      { "name": "Garlic Shrimp (4p)", "desc": "" },
+      { "name": "Spicy Shrimp", "desc": "" },
+      { "name": "Curry Shrimp", "desc": "" },
+      { "name": "Sweet and Sour Pork", "desc": "" },
+      { "name": "Shrimp with Bamboo", "desc": "" },
+      { "name": "Spicy Chicken", "desc": "" },
+      { "name": "Curry Chicken", "desc": "" },
+      { "name": "Chicken with Almonds", "desc": "" },
+      { "name": "Chicken with Bamboo", "desc": "" },
+      { "name": "Curry Beef", "desc": "" },
+      { "name": "Spicy Beef", "desc": "" },
+      { "name": "Beef with Bamboo", "desc": "" },
+      { "name": "Cauliflower Stir-Fry", "desc": "" },
+      { "name": "Baby Octopus Stir-Fry", "desc": "" }
+    ]
+  }
+}
