@@ -2,10 +2,12 @@ import Navbar from "@/components/home/Navbar";
 import Footer from "@/components/home/Footer";
 import PageHero from "@/components/ui/PageHero";
 import DeliveryContent from "@/components/delivery/DeliveryContent";
-import { useTranslations } from "next-intl";
+import { getMenuData } from "@/lib/menuService";
+import { getTranslations } from "next-intl/server";
 
-export default function DeliveryPage() {
-  const t = useTranslations("Delivery");
+export default async function DeliveryPage() {
+  const t = await getTranslations("Delivery");
+  const { categories, items } = await getMenuData();
 
   return (
     <>
@@ -16,7 +18,7 @@ export default function DeliveryPage() {
         desc={t("heroDesc")}
         kanji="届"
       />
-      <DeliveryContent />
+      <DeliveryContent categories={categories} items={items} />
       <Footer />
     </>
   );

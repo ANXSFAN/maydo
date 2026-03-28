@@ -2,10 +2,12 @@ import Navbar from "@/components/home/Navbar";
 import Footer from "@/components/home/Footer";
 import PageHero from "@/components/ui/PageHero";
 import PedidoContent from "@/components/pedido/PedidoContent";
-import { useTranslations } from "next-intl";
+import { getMenuData } from "@/lib/menuService";
+import { getTranslations } from "next-intl/server";
 
-export default function PedidoPage() {
-  const t = useTranslations("Pedido");
+export default async function PedidoPage() {
+  const t = await getTranslations("Pedido");
+  const { categories, items } = await getMenuData();
 
   return (
     <>
@@ -16,7 +18,7 @@ export default function PedidoPage() {
         desc={t("heroDesc")}
         kanji="注"
       />
-      <PedidoContent />
+      <PedidoContent categories={categories} items={items} />
       <Footer />
     </>
   );

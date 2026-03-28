@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { orderlix, TENANT_ID } from "@/lib/orderlix";
 
 export async function POST(request: NextRequest) {
   try {
@@ -35,18 +35,33 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const reservation = await prisma.reservation.create({
-      data: {
-        name,
-        email,
-        phone,
-        date: new Date(date),
-        time,
-        guests,
-        period,
+    // 写入 Orderlix 的 reservation 表
+    const { data: reservation, error } = await orderlix
+      .from("reservation")
+      .insert({
+        id: crypto.randomUUID(),
+        tenant_id: TENANT_ID,
+        customer_name: name,
+        customer_email: email,
+        customer_phone: phone,
+        date: date,
+        time_slot: time,
+        party_size: guests,
+        period: period,
         notes: notes || null,
-      },
-    });
+        status: "pending",
+        updated_at: new Date().toISOString(),
+      })
+      .select("id")
+      .single();
+
+    if (error) {
+      console.error("Reservation insert error:", error);
+      return NextResponse.json(
+        { error: "Failed to create reservation" },
+        { status: 500 }
+      );
+    }
 
     return NextResponse.json({ success: true, reservation });
   } catch (err) {

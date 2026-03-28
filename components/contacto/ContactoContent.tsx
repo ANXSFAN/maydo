@@ -27,29 +27,8 @@ export default function ContactoContent() {
   };
 
   const handleSubmit = async () => {
-    if (!validate()) return;
-    setFormStatus("loading");
-
-    try {
-      const res = await fetch("/api/contact", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: name.trim(),
-          email: email.trim(),
-          message: message.trim(),
-        }),
-      });
-
-      if (!res.ok) throw new Error("Failed");
-
-      setFormStatus("success");
-      setName("");
-      setEmail("");
-      setMessage("");
-    } catch {
-      setFormStatus("error");
-    }
+    // TODO: 等 Orderlix 补全 contacts 模块后启用
+    setFormStatus("error");
   };
 
   return (

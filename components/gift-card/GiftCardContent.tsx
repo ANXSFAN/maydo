@@ -44,6 +44,11 @@ export default function GiftCardContent() {
   };
 
   const handleSubmit = async () => {
+    // TODO: 等 Orderlix 补全 gift-cards 模块后启用
+    setFormStatus("error");
+  };
+
+  const _handleSubmitOriginal = async () => {
     if (!validate()) return;
     setFormStatus("loading");
 

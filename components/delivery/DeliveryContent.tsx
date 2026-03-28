@@ -1,25 +1,23 @@
 "use client";
 
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import Image from "next/image";
 import { useTranslations, useLocale } from "next-intl";
 import { motion, AnimatePresence } from "framer-motion";
-import { getDishI18n } from "@/lib/dishI18n";
 import FadeIn from "@/components/ui/FadeIn";
 import DiamondDivider from "@/components/ui/DiamondDivider";
-import {
-  MENU_DATA,
-  CATEGORY_NAMES,
-  SUSHI_CATEGORIES,
-  COCINA_CATEGORIES,
-} from "@/lib/menuData";
-import type { MenuItem } from "@/lib/menuData";
+import type { MenuCategoryData, MenuItemData } from "@/lib/menu-types";
+import { getLocalizedText } from "@/lib/menu-types";
+
+type Props = {
+  categories: MenuCategoryData[];
+  items: MenuItemData[];
+};
 
 type Section = "all" | "sushi" | "cocina";
 
 type CartItem = {
-  categoryKey: string;
-  itemIndex: number;
+  itemId: string;
   quantity: number;
 };
 
@@ -29,11 +27,10 @@ const DELIVERY_CART_KEY = "sushi-maydo-delivery-cart";
 const MIN_ORDER = 40;
 const DELIVERY_FEE = 3.5;
 
-export default function DeliveryContent() {
+export default function DeliveryContent({ categories, items }: Props) {
   const t = useTranslations("Delivery");
   const tPedido = useTranslations("Pedido");
   const locale = useLocale();
-  const dishI18n = getDishI18n(locale);
   const [activeSection, setActiveSection] = useState<Section>("all");
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const [cart, setCart] = useState<CartItem[]>([]);
@@ -61,6 +58,32 @@ export default function DeliveryContent() {
   const [couponDiscount, setCouponDiscount] = useState(0);
   const [couponError, setCouponError] = useState("");
 
+  // ---- Derived data ----
+  const itemMap = useMemo(() => {
+    const map: Record<string, MenuItemData> = {};
+    for (const item of items) map[item.id] = item;
+    return map;
+  }, [items]);
+
+  const categoriesWithItems = useMemo(() => {
+    return categories.map((cat) => ({
+      category: cat,
+      items: items.filter((i) => i.categoryId === cat.id),
+    }));
+  }, [categories, items]);
+
+  const sushiCatIds = useMemo(
+    () => new Set(categories.filter((c) => c.station === "sushi").map((c) => c.id)),
+    [categories]
+  );
+
+  const visibleCategories = useMemo(() => {
+    if (activeSection === "all") return categoriesWithItems;
+    if (activeSection === "sushi")
+      return categoriesWithItems.filter((c) => sushiCatIds.has(c.category.id));
+    return categoriesWithItems.filter((c) => !sushiCatIds.has(c.category.id));
+  }, [activeSection, categoriesWithItems, sushiCatIds]);
+
   // Load cart from localStorage
   useEffect(() => {
     try {
@@ -78,49 +101,31 @@ export default function DeliveryContent() {
     } catch { /* ignore */ }
   }, [cart]);
 
-  const visibleCategories =
-    activeSection === "all"
-      ? CATEGORY_NAMES
-      : activeSection === "sushi"
-        ? SUSHI_CATEGORIES
-        : COCINA_CATEGORIES;
-
-  const addToCart = (categoryKey: string, itemIndex: number) => {
+  const addToCart = (itemId: string) => {
     setCart((prev) => {
-      const existing = prev.find(
-        (c) => c.categoryKey === categoryKey && c.itemIndex === itemIndex
-      );
+      const existing = prev.find((c) => c.itemId === itemId);
       if (existing) {
-        return prev.map((c) =>
-          c.categoryKey === categoryKey && c.itemIndex === itemIndex
-            ? { ...c, quantity: c.quantity + 1 }
-            : c
-        );
+        return prev.map((c) => c.itemId === itemId ? { ...c, quantity: c.quantity + 1 } : c);
       }
-      return [...prev, { categoryKey, itemIndex, quantity: 1 }];
+      return [...prev, { itemId, quantity: 1 }];
     });
   };
 
-  const updateQuantity = (categoryKey: string, itemIndex: number, delta: number) => {
+  const updateQuantity = (itemId: string, delta: number) => {
     setCart((prev) =>
       prev
-        .map((c) =>
-          c.categoryKey === categoryKey && c.itemIndex === itemIndex
-            ? { ...c, quantity: c.quantity + delta }
-            : c
-        )
+        .map((c) => c.itemId === itemId ? { ...c, quantity: c.quantity + delta } : c)
         .filter((c) => c.quantity > 0)
     );
   };
 
   const getItem = useCallback(
-    (cartItem: CartItem): MenuItem | null =>
-      MENU_DATA[cartItem.categoryKey]?.items[cartItem.itemIndex] ?? null,
-    []
+    (cartItem: CartItem): MenuItemData | null => itemMap[cartItem.itemId] ?? null,
+    [itemMap]
   );
 
-  const getItemName = (categoryKey: string, itemIndex: number, fallback: string) =>
-    dishI18n[categoryKey]?.items[itemIndex]?.name || fallback;
+  const getName = (item: MenuItemData) => getLocalizedText(item.name, locale);
+  const getDesc = (item: MenuItemData) => getLocalizedText(item.description, locale);
 
   const cartTotal = cart.reduce((sum, c) => {
     const item = getItem(c);
@@ -132,10 +137,8 @@ export default function DeliveryContent() {
   const formatPrice = (price: number) =>
     `${price.toFixed(2).replace(".", ",")}€`;
 
-  const getCartQuantity = (categoryKey: string, itemIndex: number) =>
-    cart.find(
-      (c) => c.categoryKey === categoryKey && c.itemIndex === itemIndex
-    )?.quantity ?? 0;
+  const getCartQuantity = (itemId: string) =>
+    cart.find((c) => c.itemId === itemId)?.quantity ?? 0;
 
   const meetsMinOrder = cartTotal >= MIN_ORDER;
   const grandTotal = Math.max(0, cartTotal - couponDiscount) + (meetsMinOrder ? DELIVERY_FEE : 0);
@@ -180,14 +183,13 @@ export default function DeliveryContent() {
 
   useEffect(() => {
     const observers: IntersectionObserver[] = [];
-    const cats = visibleCategories;
-    cats.forEach((cat) => {
-      const el = document.getElementById(`cat-${cat}`);
+    visibleCategories.forEach(({ category }) => {
+      const el = document.getElementById(`cat-${category.id}`);
       if (!el) return;
       const observer = new IntersectionObserver(
         ([entry]) => {
           if (entry.isIntersecting) {
-            setActiveCategory(cat);
+            setActiveCategory(category.id);
           }
         },
         { rootMargin: "-120px 0px -60% 0px", threshold: 0 }
@@ -219,10 +221,9 @@ export default function DeliveryContent() {
       const orderItems = cart.map((c) => {
         const item = getItem(c);
         return {
-          categoryKey: c.categoryKey,
-          itemIndex: c.itemIndex,
+          id: c.itemId,
           quantity: c.quantity,
-          name: getItemName(c.categoryKey, c.itemIndex, item?.name ?? ""),
+          name: item ? getLocalizedText(item.name, locale) : "",
           price: item?.price ?? 0,
         };
       });
@@ -309,21 +310,21 @@ export default function DeliveryContent() {
           ))}
         </div>
         <div ref={catNavRef} className="flex gap-2 px-3 py-2 overflow-x-auto scrollbar-hide border-t border-beige/30">
-          {visibleCategories.map((cat) => (
+          {visibleCategories.map(({ category }) => (
             <button
-              key={cat}
-              data-cat={cat}
+              key={category.id}
+              data-cat={category.id}
               onClick={() => {
-                setActiveCategory(cat);
+                setActiveCategory(category.id);
                 setTimeout(() => {
-                  document.getElementById(`cat-${cat}`)?.scrollIntoView({ behavior: "smooth", block: "start" });
+                  document.getElementById(`cat-${category.id}`)?.scrollIntoView({ behavior: "smooth", block: "start" });
                 }, 50);
               }}
               className={`px-3 py-1.5 text-[11px] tracking-[0.5px] font-body font-light border transition-all duration-200 cursor-pointer whitespace-nowrap shrink-0 ${
-                activeCategory === cat ? "bg-camel text-white border-camel" : "bg-white text-gray border-beige active:border-camel"
+                activeCategory === category.id ? "bg-camel text-white border-camel" : "bg-white text-gray border-beige active:border-camel"
               }`}
             >
-              {dishI18n[cat]?.label || cat}
+              {getLocalizedText(category.name, locale)}
             </button>
           ))}
         </div>
@@ -353,93 +354,92 @@ export default function DeliveryContent() {
               </FadeIn>
 
               <div className="hidden lg:flex flex-wrap gap-2 mb-8">
-                {visibleCategories.map((cat) => (
+                {visibleCategories.map(({ category }) => (
                   <button
-                    key={cat}
+                    key={category.id}
                     onClick={() => {
-                      setActiveCategory(activeCategory === cat ? null : cat);
-                      document.getElementById(`cat-${cat}`)?.scrollIntoView({ behavior: "smooth", block: "start" });
+                      setActiveCategory(activeCategory === category.id ? null : category.id);
+                      document.getElementById(`cat-${category.id}`)?.scrollIntoView({ behavior: "smooth", block: "start" });
                     }}
                     className={`px-3 py-1.5 text-[11px] tracking-[1px] font-body font-light border transition-all duration-200 cursor-pointer whitespace-nowrap ${
-                      activeCategory === cat
+                      activeCategory === category.id
                         ? "bg-camel text-white border-camel"
                         : "bg-white text-gray border-beige hover:border-camel hover:text-camel"
                     }`}
                   >
-                    {dishI18n[cat]?.label || cat}
+                    {getLocalizedText(category.name, locale)}
                   </button>
                 ))}
               </div>
 
               <div className="space-y-8 sm:space-y-10">
-                {visibleCategories.map((catKey) => {
-                  const category = MENU_DATA[catKey];
-                  return (
-                    <div key={catKey} id={`cat-${catKey}`} className="scroll-mt-[170px] lg:scroll-mt-24">
-                      <div className="flex items-center gap-3 sm:gap-4 mb-4 sm:mb-5">
-                        <h3 className="text-[18px] sm:text-[22px] font-light text-maroon whitespace-nowrap">
-                          {dishI18n[catKey]?.label || catKey}
-                        </h3>
-                        <div className="flex-1 h-px bg-beige" />
-                        <span className="font-body text-[10px] sm:text-[11px] text-gray tracking-[1px]">
-                          {category.items.length} {tPedido("items")}
-                        </span>
-                      </div>
+                {visibleCategories.map(({ category, items: catItems }) => (
+                  <div key={category.id} id={`cat-${category.id}`} className="scroll-mt-[170px] lg:scroll-mt-24">
+                    <div className="flex items-center gap-3 sm:gap-4 mb-4 sm:mb-5">
+                      <h3 className="text-[18px] sm:text-[22px] font-light text-maroon whitespace-nowrap">
+                        {getLocalizedText(category.name, locale)}
+                      </h3>
+                      <div className="flex-1 h-px bg-beige" />
+                      <span className="font-body text-[10px] sm:text-[11px] text-gray tracking-[1px]">
+                        {catItems.length} {tPedido("items")}
+                      </span>
+                    </div>
 
-                      <div className="grid grid-cols-2 gap-3 sm:gap-5 md:grid-cols-3 xl:grid-cols-4">
-                        {category.items.map((item, idx) => {
-                          const qty = getCartQuantity(catKey, idx);
-                          return (
-                            <div
-                              key={idx}
-                              className="group bg-white border border-beige transition-all duration-300 hover:shadow-[0_8px_30px_rgba(122,66,66,0.1)] overflow-hidden flex flex-col"
-                            >
-                              {item.image ? (
-                                <div className="relative aspect-square overflow-hidden">
-                                  <Image src={item.image} alt={item.name} fill className="object-cover transition-transform duration-500 group-hover:scale-[1.05]" sizes="(max-width: 640px) 50vw, (max-width: 768px) 50vw, (max-width: 1280px) 33vw, 25vw" />
-                                </div>
-                              ) : (
-                                <div className="aspect-square bg-beige/30 flex items-center justify-center">
-                                  <span className="text-gray/30 text-4xl font-cjk">鮨</span>
-                                </div>
+                    <div className="grid grid-cols-2 gap-3 sm:gap-5 md:grid-cols-3 xl:grid-cols-4">
+                      {catItems.map((item) => {
+                        const qty = getCartQuantity(item.id);
+                        const itemName = getName(item);
+                        const itemDesc = getDesc(item);
+                        return (
+                          <div
+                            key={item.id}
+                            className="group bg-white border border-beige transition-all duration-300 hover:shadow-[0_8px_30px_rgba(122,66,66,0.1)] overflow-hidden flex flex-col"
+                          >
+                            {item.imageUrl ? (
+                              <div className="relative aspect-square overflow-hidden">
+                                <Image src={item.imageUrl} alt={itemName} fill className="object-cover transition-transform duration-500 group-hover:scale-[1.05]" sizes="(max-width: 640px) 50vw, (max-width: 768px) 50vw, (max-width: 1280px) 33vw, 25vw" />
+                              </div>
+                            ) : (
+                              <div className="aspect-square bg-beige/30 flex items-center justify-center">
+                                <span className="text-gray/30 text-4xl font-cjk">鮨</span>
+                              </div>
+                            )}
+                            <div className="p-3.5 sm:p-4 flex flex-col flex-1">
+                              <h4 className="text-[20px] sm:text-[15px] font-medium sm:font-normal text-maroon leading-snug">
+                                {itemName}
+                              </h4>
+                              {itemDesc && (
+                                <p className="font-body text-[16px] sm:text-[12px] text-ink/60 mt-1 leading-relaxed line-clamp-2">
+                                  {itemDesc}
+                                </p>
                               )}
-                              <div className="p-3.5 sm:p-4 flex flex-col flex-1">
-                                <h4 className="text-[20px] sm:text-[15px] font-medium sm:font-normal text-maroon leading-snug">
-                                  {dishI18n[catKey]?.items[idx]?.name || item.name}
-                                </h4>
-                                {(dishI18n[catKey]?.items[idx]?.desc || item.desc) && (
-                                  <p className="font-body text-[16px] sm:text-[12px] text-ink/60 mt-1 leading-relaxed line-clamp-2">
-                                    {dishI18n[catKey]?.items[idx]?.desc || item.desc}
-                                  </p>
+                              <div className="mt-auto pt-3">
+                                <span className="text-[24px] sm:text-[16px] font-light text-camel block mb-2.5 sm:mb-3">
+                                  {formatPrice(item.price)}
+                                </span>
+                                {qty > 0 ? (
+                                  <div className="flex items-center justify-between border border-beige">
+                                    <button onClick={() => updateQuantity(item.id, -1)} className="w-10 h-10 sm:w-8 sm:h-8 text-maroon font-body text-base sm:text-sm flex items-center justify-center cursor-pointer transition-colors hover:bg-beige/50 bg-transparent border-none">−</button>
+                                    <span className="font-body text-[15px] sm:text-[14px] text-maroon font-medium">{qty}</span>
+                                    <button onClick={() => updateQuantity(item.id, 1)} className="w-10 h-10 sm:w-8 sm:h-8 text-maroon font-body text-base sm:text-sm flex items-center justify-center cursor-pointer transition-colors hover:bg-beige/50 bg-transparent border-none">+</button>
+                                  </div>
+                                ) : (
+                                  <button
+                                    onClick={() => addToCart(item.id)}
+                                    className="w-full h-10 sm:h-9 bg-maroon text-white font-body text-[12px] sm:text-[11px] tracking-[2px] uppercase border-none cursor-pointer transition-all duration-300 hover:bg-maroon-dark active:scale-[0.97] flex items-center justify-center gap-2"
+                                  >
+                                    <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M8 3v10M3 8h10" /></svg>
+                                    {tPedido("add")}
+                                  </button>
                                 )}
-                                <div className="mt-auto pt-3">
-                                  <span className="text-[24px] sm:text-[16px] font-light text-camel block mb-2.5 sm:mb-3">
-                                    {formatPrice(item.price)}
-                                  </span>
-                                  {qty > 0 ? (
-                                    <div className="flex items-center justify-between border border-beige">
-                                      <button onClick={() => updateQuantity(catKey, idx, -1)} className="w-10 h-10 sm:w-8 sm:h-8 text-maroon font-body text-base sm:text-sm flex items-center justify-center cursor-pointer transition-colors hover:bg-beige/50 bg-transparent border-none">−</button>
-                                      <span className="font-body text-[15px] sm:text-[14px] text-maroon font-medium">{qty}</span>
-                                      <button onClick={() => updateQuantity(catKey, idx, 1)} className="w-10 h-10 sm:w-8 sm:h-8 text-maroon font-body text-base sm:text-sm flex items-center justify-center cursor-pointer transition-colors hover:bg-beige/50 bg-transparent border-none">+</button>
-                                    </div>
-                                  ) : (
-                                    <button
-                                      onClick={() => addToCart(catKey, idx)}
-                                      className="w-full h-10 sm:h-9 bg-maroon text-white font-body text-[12px] sm:text-[11px] tracking-[2px] uppercase border-none cursor-pointer transition-all duration-300 hover:bg-maroon-dark active:scale-[0.97] flex items-center justify-center gap-2"
-                                    >
-                                      <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M8 3v10M3 8h10" /></svg>
-                                      {tPedido("add")}
-                                    </button>
-                                  )}
-                                </div>
                               </div>
                             </div>
-                          );
-                        })}
-                      </div>
+                          </div>
+                        );
+                      })}
                     </div>
-                  );
-                })}
+                  </div>
+                ))}
               </div>
             </div>
 
@@ -465,20 +465,20 @@ export default function DeliveryContent() {
                           const item = getItem(cartItem);
                           if (!item) return null;
                           return (
-                            <div key={`${cartItem.categoryKey}-${cartItem.itemIndex}`} className="flex items-center gap-3">
-                              {item.image && (
+                            <div key={cartItem.itemId} className="flex items-center gap-3">
+                              {item.imageUrl && (
                                 <div className="w-10 h-10 shrink-0 relative overflow-hidden">
-                                  <Image src={item.image} alt={getItemName(cartItem.categoryKey, cartItem.itemIndex, item.name)} fill className="object-cover" sizes="40px" />
+                                  <Image src={item.imageUrl} alt={getName(item)} fill className="object-cover" sizes="40px" />
                                 </div>
                               )}
                               <div className="flex-1 min-w-0">
-                                <div className="text-[14px] text-maroon font-light truncate">{getItemName(cartItem.categoryKey, cartItem.itemIndex, item.name)}</div>
+                                <div className="text-[14px] text-maroon font-light truncate">{getName(item)}</div>
                                 <div className="font-body text-[12px] text-gray">{formatPrice(item.price)} × {cartItem.quantity}</div>
                               </div>
                               <div className="flex items-center gap-2">
-                                <button onClick={() => updateQuantity(cartItem.categoryKey, cartItem.itemIndex, -1)} className="w-7 h-7 border border-beige text-maroon font-body text-xs flex items-center justify-center cursor-pointer hover:border-maroon bg-transparent">−</button>
+                                <button onClick={() => updateQuantity(cartItem.itemId, -1)} className="w-7 h-7 border border-beige text-maroon font-body text-xs flex items-center justify-center cursor-pointer hover:border-maroon bg-transparent">−</button>
                                 <span className="font-body text-[13px] text-maroon w-4 text-center">{cartItem.quantity}</span>
-                                <button onClick={() => updateQuantity(cartItem.categoryKey, cartItem.itemIndex, 1)} className="w-7 h-7 border border-beige text-maroon font-body text-xs flex items-center justify-center cursor-pointer hover:border-maroon bg-transparent">+</button>
+                                <button onClick={() => updateQuantity(cartItem.itemId, 1)} className="w-7 h-7 border border-beige text-maroon font-body text-xs flex items-center justify-center cursor-pointer hover:border-maroon bg-transparent">+</button>
                               </div>
                               <div className="text-[14px] text-maroon font-light w-16 text-right">{formatPrice(item.price * cartItem.quantity)}</div>
                             </div>
@@ -579,16 +579,16 @@ export default function DeliveryContent() {
                     const item = getItem(cartItem);
                     if (!item) return null;
                     return (
-                      <div key={`m-${cartItem.categoryKey}-${cartItem.itemIndex}`} className="flex items-center gap-3 bg-white border border-beige p-3">
-                        {item.image && <div className="w-12 h-12 shrink-0 relative overflow-hidden"><Image src={item.image} alt={getItemName(cartItem.categoryKey, cartItem.itemIndex, item.name)} fill className="object-cover" sizes="48px" /></div>}
+                      <div key={`m-${cartItem.itemId}`} className="flex items-center gap-3 bg-white border border-beige p-3">
+                        {item.imageUrl && <div className="w-12 h-12 shrink-0 relative overflow-hidden"><Image src={item.imageUrl} alt={getName(item)} fill className="object-cover" sizes="48px" /></div>}
                         <div className="flex-1 min-w-0">
-                          <div className="text-[14px] text-maroon font-light truncate">{getItemName(cartItem.categoryKey, cartItem.itemIndex, item.name)}</div>
+                          <div className="text-[14px] text-maroon font-light truncate">{getName(item)}</div>
                           <div className="font-body text-[12px] text-camel">{formatPrice(item.price)}</div>
                         </div>
                         <div className="flex items-center gap-2">
-                          <button onClick={() => updateQuantity(cartItem.categoryKey, cartItem.itemIndex, -1)} className="w-7 h-7 border border-beige text-maroon font-body text-sm flex items-center justify-center cursor-pointer bg-transparent">−</button>
+                          <button onClick={() => updateQuantity(cartItem.itemId, -1)} className="w-7 h-7 border border-beige text-maroon font-body text-sm flex items-center justify-center cursor-pointer bg-transparent">−</button>
                           <span className="font-body text-[14px] text-maroon w-4 text-center">{cartItem.quantity}</span>
-                          <button onClick={() => updateQuantity(cartItem.categoryKey, cartItem.itemIndex, 1)} className="w-7 h-7 border border-beige text-maroon font-body text-sm flex items-center justify-center cursor-pointer bg-transparent">+</button>
+                          <button onClick={() => updateQuantity(cartItem.itemId, 1)} className="w-7 h-7 border border-beige text-maroon font-body text-sm flex items-center justify-center cursor-pointer bg-transparent">+</button>
                         </div>
                         <div className="text-[14px] text-maroon font-light w-14 text-right">{formatPrice(item.price * cartItem.quantity)}</div>
                       </div>
@@ -664,8 +664,8 @@ export default function DeliveryContent() {
                         const item = getItem(cartItem);
                         if (!item) return null;
                         return (
-                          <div key={`co-${cartItem.categoryKey}-${cartItem.itemIndex}`} className="flex justify-between py-1.5 font-body text-[13px] text-gray font-light">
-                            <span className="truncate mr-2">{getItemName(cartItem.categoryKey, cartItem.itemIndex, item.name)} × {cartItem.quantity}</span>
+                          <div key={`co-${cartItem.itemId}`} className="flex justify-between py-1.5 font-body text-[13px] text-gray font-light">
+                            <span className="truncate mr-2">{getName(item)} × {cartItem.quantity}</span>
                             <span className="text-maroon shrink-0">{formatPrice(item.price * cartItem.quantity)}</span>
                           </div>
                         );

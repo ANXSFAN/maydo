@@ -1,25 +1,23 @@
 "use client";
 
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import Image from "next/image";
 import { useTranslations, useLocale } from "next-intl";
 import { motion, AnimatePresence } from "framer-motion";
-import { getDishI18n } from "@/lib/dishI18n";
 import FadeIn from "@/components/ui/FadeIn";
 import DiamondDivider from "@/components/ui/DiamondDivider";
-import {
-  MENU_DATA,
-  CATEGORY_NAMES,
-  SUSHI_CATEGORIES,
-  COCINA_CATEGORIES,
-} from "@/lib/menuData";
-import type { MenuItem } from "@/lib/menuData";
+import type { MenuCategoryData, MenuItemData } from "@/lib/menu-types";
+import { getLocalizedText } from "@/lib/menu-types";
+
+type Props = {
+  categories: MenuCategoryData[];
+  items: MenuItemData[];
+};
 
 type Section = "all" | "sushi" | "cocina";
 
 type CartItem = {
-  categoryKey: string;
-  itemIndex: number;
+  itemId: string;
   quantity: number;
 };
 
@@ -32,16 +30,14 @@ const PICKUP_SLOTS = [
 
 const CART_STORAGE_KEY = "sushi-maydo-cart";
 
-export default function PedidoContent() {
+export default function PedidoContent({ categories, items }: Props) {
   const t = useTranslations("Pedido");
   const locale = useLocale();
-  const dishI18n = getDishI18n(locale);
   const [activeSection, setActiveSection] = useState<Section>("all");
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [showCheckout, setShowCheckout] = useState(false);
   const [showMobileCart, setShowMobileCart] = useState(false);
-  const [showCatMenu, setShowCatMenu] = useState(false);
   const catNavRef = useRef<HTMLDivElement>(null);
 
   // Checkout form state
@@ -60,7 +56,33 @@ export default function PedidoContent() {
   const [couponDiscount, setCouponDiscount] = useState(0);
   const [couponError, setCouponError] = useState("");
 
-  // Load cart from localStorage on mount
+  // ---- Derived data ----
+  const itemMap = useMemo(() => {
+    const map: Record<string, MenuItemData> = {};
+    for (const item of items) map[item.id] = item;
+    return map;
+  }, [items]);
+
+  const categoriesWithItems = useMemo(() => {
+    return categories.map((cat) => ({
+      category: cat,
+      items: items.filter((i) => i.categoryId === cat.id),
+    }));
+  }, [categories, items]);
+
+  const sushiCatIds = useMemo(
+    () => new Set(categories.filter((c) => c.station === "sushi").map((c) => c.id)),
+    [categories]
+  );
+
+  const visibleCategories = useMemo(() => {
+    if (activeSection === "all") return categoriesWithItems;
+    if (activeSection === "sushi")
+      return categoriesWithItems.filter((c) => sushiCatIds.has(c.category.id));
+    return categoriesWithItems.filter((c) => !sushiCatIds.has(c.category.id));
+  }, [activeSection, categoriesWithItems, sushiCatIds]);
+
+  // ---- Cart helpers ----
   useEffect(() => {
     try {
       const saved = localStorage.getItem(CART_STORAGE_KEY);
@@ -71,60 +93,37 @@ export default function PedidoContent() {
     } catch { /* ignore */ }
   }, []);
 
-  // Save cart to localStorage on change
   useEffect(() => {
     try {
       localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(cart));
     } catch { /* ignore */ }
   }, [cart]);
 
-  const visibleCategories =
-    activeSection === "all"
-      ? CATEGORY_NAMES
-      : activeSection === "sushi"
-        ? SUSHI_CATEGORIES
-        : COCINA_CATEGORIES;
-
-  const addToCart = (categoryKey: string, itemIndex: number) => {
+  const addToCart = (itemId: string) => {
     setCart((prev) => {
-      const existing = prev.find(
-        (c) => c.categoryKey === categoryKey && c.itemIndex === itemIndex
-      );
+      const existing = prev.find((c) => c.itemId === itemId);
       if (existing) {
-        return prev.map((c) =>
-          c.categoryKey === categoryKey && c.itemIndex === itemIndex
-            ? { ...c, quantity: c.quantity + 1 }
-            : c
-        );
+        return prev.map((c) => c.itemId === itemId ? { ...c, quantity: c.quantity + 1 } : c);
       }
-      return [...prev, { categoryKey, itemIndex, quantity: 1 }];
+      return [...prev, { itemId, quantity: 1 }];
     });
   };
 
-  const updateQuantity = (
-    categoryKey: string,
-    itemIndex: number,
-    delta: number
-  ) => {
+  const updateQuantity = (itemId: string, delta: number) => {
     setCart((prev) =>
       prev
-        .map((c) =>
-          c.categoryKey === categoryKey && c.itemIndex === itemIndex
-            ? { ...c, quantity: c.quantity + delta }
-            : c
-        )
+        .map((c) => c.itemId === itemId ? { ...c, quantity: c.quantity + delta } : c)
         .filter((c) => c.quantity > 0)
     );
   };
 
   const getItem = useCallback(
-    (cartItem: CartItem): MenuItem | null =>
-      MENU_DATA[cartItem.categoryKey]?.items[cartItem.itemIndex] ?? null,
-    []
+    (cartItem: CartItem): MenuItemData | null => itemMap[cartItem.itemId] ?? null,
+    [itemMap]
   );
 
-  const getItemName = (categoryKey: string, itemIndex: number, fallback: string) =>
-    dishI18n[categoryKey]?.items[itemIndex]?.name || fallback;
+  const getName = (item: MenuItemData) => getLocalizedText(item.name, locale);
+  const getDesc = (item: MenuItemData) => getLocalizedText(item.description, locale);
 
   const cartTotal = cart.reduce((sum, c) => {
     const item = getItem(c);
@@ -136,12 +135,10 @@ export default function PedidoContent() {
   const formatPrice = (price: number) =>
     `${price.toFixed(2).replace(".", ",")}€`;
 
-  const getCartQuantity = (categoryKey: string, itemIndex: number) =>
-    cart.find(
-      (c) => c.categoryKey === categoryKey && c.itemIndex === itemIndex
-    )?.quantity ?? 0;
+  const getCartQuantity = (itemId: string) =>
+    cart.find((c) => c.itemId === itemId)?.quantity ?? 0;
 
-  // Scroll active category button into view in the horizontal nav
+  // Scroll active category button into view
   useEffect(() => {
     if (activeCategory && catNavRef.current) {
       const btn = catNavRef.current.querySelector(`[data-cat="${activeCategory}"]`);
@@ -149,18 +146,15 @@ export default function PedidoContent() {
     }
   }, [activeCategory]);
 
-  // Auto-highlight category on scroll via IntersectionObserver
+  // Auto-highlight category on scroll
   useEffect(() => {
     const observers: IntersectionObserver[] = [];
-    const cats = visibleCategories;
-    cats.forEach((cat) => {
-      const el = document.getElementById(`cat-${cat}`);
+    visibleCategories.forEach(({ category }) => {
+      const el = document.getElementById(`cat-${category.id}`);
       if (!el) return;
       const observer = new IntersectionObserver(
         ([entry]) => {
-          if (entry.isIntersecting) {
-            setActiveCategory(cat);
-          }
+          if (entry.isIntersecting) setActiveCategory(category.id);
         },
         { rootMargin: "-120px 0px -60% 0px", threshold: 0 }
       );
@@ -222,10 +216,9 @@ export default function PedidoContent() {
       const orderItems = cart.map((c) => {
         const item = getItem(c);
         return {
-          categoryKey: c.categoryKey,
-          itemIndex: c.itemIndex,
+          id: c.itemId,
           quantity: c.quantity,
-          name: getItemName(c.categoryKey, c.itemIndex, item?.name ?? ""),
+          name: item ? getName(item) : "",
           price: item?.price ?? 0,
         };
       });
@@ -252,7 +245,6 @@ export default function PedidoContent() {
       const data = await res.json();
       setOrderNumber(data.order_number);
       setOrderStatus("success");
-      // Clear cart
       setCart([]);
       localStorage.removeItem(CART_STORAGE_KEY);
     } catch {
@@ -276,56 +268,80 @@ export default function PedidoContent() {
     setCouponError("");
   };
 
+  // ---- Shared cart item renderer ----
+  const renderCartItem = (cartItem: CartItem, prefix: string, compact?: boolean) => {
+    const item = getItem(cartItem);
+    if (!item) return null;
+    const imgSize = compact ? "w-12 h-12" : "w-10 h-10";
+    return (
+      <div
+        key={`${prefix}-${cartItem.itemId}`}
+        className={`flex items-center gap-3 ${compact ? "bg-white border border-beige p-3" : ""}`}
+      >
+        {item.imageUrl && (
+          <div className={`${imgSize} shrink-0 relative overflow-hidden`}>
+            <Image src={item.imageUrl} alt={getName(item)} fill className="object-cover" sizes={compact ? "48px" : "40px"} />
+          </div>
+        )}
+        <div className="flex-1 min-w-0">
+          <div className="text-[14px] text-maroon font-light truncate">{getName(item)}</div>
+          <div className={`font-body text-[12px] ${compact ? "text-camel" : "text-gray"}`}>
+            {compact ? formatPrice(item.price) : `${formatPrice(item.price)} × ${cartItem.quantity}`}
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => updateQuantity(cartItem.itemId, -1)}
+            className="w-7 h-7 border border-beige text-maroon font-body text-xs flex items-center justify-center cursor-pointer hover:border-maroon bg-transparent"
+          >−</button>
+          <span className="font-body text-[13px] text-maroon w-4 text-center">{cartItem.quantity}</span>
+          <button
+            onClick={() => updateQuantity(cartItem.itemId, 1)}
+            className="w-7 h-7 border border-beige text-maroon font-body text-xs flex items-center justify-center cursor-pointer hover:border-maroon bg-transparent"
+          >+</button>
+        </div>
+        <div className="text-[14px] text-maroon font-light w-16 text-right">
+          {formatPrice(item.price * cartItem.quantity)}
+        </div>
+      </div>
+    );
+  };
+
   return (
     <>
-      {/* Sticky top nav for mobile: section tabs + horizontal category scroll */}
+      {/* Sticky top nav for mobile */}
       <div className="lg:hidden sticky top-[60px] z-40 bg-cream/95 backdrop-blur-md border-b border-beige/50">
-        {/* Section tabs */}
         <div className="flex">
           {(["all", "sushi", "cocina"] as Section[]).map((sec) => (
             <button
               key={sec}
-              onClick={() => {
-                setActiveSection(sec);
-                setActiveCategory(null);
-              }}
-              className={`
-                flex-1 py-3 text-[12px] tracking-[2px] uppercase font-body font-light transition-all duration-200 cursor-pointer border-none
-                ${
-                  activeSection === sec
-                    ? "bg-maroon text-white"
-                    : "bg-transparent text-maroon active:bg-beige/50"
-                }
-              `}
+              onClick={() => { setActiveSection(sec); setActiveCategory(null); }}
+              className={`flex-1 py-3 text-[12px] tracking-[2px] uppercase font-body font-light transition-all duration-200 cursor-pointer border-none ${
+                activeSection === sec ? "bg-maroon text-white" : "bg-transparent text-maroon active:bg-beige/50"
+              }`}
             >
               {t(sec)}
             </button>
           ))}
         </div>
-        {/* Horizontal category scroll bar */}
         <div ref={catNavRef} className="flex gap-2 px-3 py-2 overflow-x-auto scrollbar-hide border-t border-beige/30">
-          {visibleCategories.map((cat) => (
+          {visibleCategories.map(({ category }) => (
             <button
-              key={cat}
-              data-cat={cat}
+              key={category.id}
+              data-cat={category.id}
               onClick={() => {
-                setActiveCategory(cat);
+                setActiveCategory(category.id);
                 setTimeout(() => {
-                  document
-                    .getElementById(`cat-${cat}`)
-                    ?.scrollIntoView({ behavior: "smooth", block: "start" });
+                  document.getElementById(`cat-${category.id}`)?.scrollIntoView({ behavior: "smooth", block: "start" });
                 }, 50);
               }}
-              className={`
-                px-3 py-1.5 text-[11px] tracking-[0.5px] font-body font-light border transition-all duration-200 cursor-pointer whitespace-nowrap shrink-0
-                ${
-                  activeCategory === cat
-                    ? "bg-camel text-white border-camel"
-                    : "bg-white text-gray border-beige active:border-camel"
-                }
-              `}
+              className={`px-3 py-1.5 text-[11px] tracking-[0.5px] font-body font-light border transition-all duration-200 cursor-pointer whitespace-nowrap shrink-0 ${
+                activeCategory === category.id
+                  ? "bg-camel text-white border-camel"
+                  : "bg-white text-gray border-beige active:border-camel"
+              }`}
             >
-              {dishI18n[cat]?.label || cat}
+              {getLocalizedText(category.name, locale)}
             </button>
           ))}
         </div>
@@ -336,24 +352,18 @@ export default function PedidoContent() {
           <div className="flex gap-10 max-lg:flex-col">
             {/* Menu items */}
             <div className="flex-1 min-w-0">
-              {/* Desktop-only section tabs (mobile ones are in sticky header) */}
+              {/* Desktop section tabs */}
               <FadeIn className="hidden lg:block">
                 <div className="flex gap-3 mb-5">
                   {(["all", "sushi", "cocina"] as Section[]).map((sec) => (
                     <button
                       key={sec}
-                      onClick={() => {
-                        setActiveSection(sec);
-                        setActiveCategory(null);
-                      }}
-                      className={`
-                        px-5 py-2.5 text-[12px] tracking-[2px] uppercase font-body font-light border transition-all duration-300 cursor-pointer
-                        ${
-                          activeSection === sec
-                            ? "bg-maroon text-white border-maroon"
-                            : "bg-transparent text-maroon border-beige hover:border-maroon"
-                        }
-                      `}
+                      onClick={() => { setActiveSection(sec); setActiveCategory(null); }}
+                      className={`px-5 py-2.5 text-[12px] tracking-[2px] uppercase font-body font-light border transition-all duration-300 cursor-pointer ${
+                        activeSection === sec
+                          ? "bg-maroon text-white border-maroon"
+                          : "bg-transparent text-maroon border-beige hover:border-maroon"
+                      }`}
                     >
                       {t(sec)}
                     </button>
@@ -361,206 +371,132 @@ export default function PedidoContent() {
                 </div>
               </FadeIn>
 
-              {/* Desktop-only category nav */}
+              {/* Desktop category nav */}
               <div className="hidden lg:flex flex-wrap gap-2 mb-8">
-                {visibleCategories.map((cat) => (
+                {visibleCategories.map(({ category }) => (
                   <button
-                    key={cat}
+                    key={category.id}
                     onClick={() => {
-                      setActiveCategory(activeCategory === cat ? null : cat);
-                      document
-                        .getElementById(`cat-${cat}`)
-                        ?.scrollIntoView({ behavior: "smooth", block: "start" });
+                      setActiveCategory(activeCategory === category.id ? null : category.id);
+                      document.getElementById(`cat-${category.id}`)?.scrollIntoView({ behavior: "smooth", block: "start" });
                     }}
-                    className={`
-                      px-3 py-1.5 text-[11px] tracking-[1px] font-body font-light border transition-all duration-200 cursor-pointer whitespace-nowrap
-                      ${
-                        activeCategory === cat
-                          ? "bg-camel text-white border-camel"
-                          : "bg-white text-gray border-beige hover:border-camel hover:text-camel"
-                      }
-                    `}
+                    className={`px-3 py-1.5 text-[11px] tracking-[1px] font-body font-light border transition-all duration-200 cursor-pointer whitespace-nowrap ${
+                      activeCategory === category.id
+                        ? "bg-camel text-white border-camel"
+                        : "bg-white text-gray border-beige hover:border-camel hover:text-camel"
+                    }`}
                   >
-                    {dishI18n[cat]?.label || cat}
+                    {getLocalizedText(category.name, locale)}
                   </button>
                 ))}
               </div>
 
-              {/* Category sections with items */}
+              {/* Category sections */}
               <div className="space-y-8 sm:space-y-10">
-                {visibleCategories.map((catKey) => {
-                  const category = MENU_DATA[catKey];
-                  return (
-                    <div key={catKey} id={`cat-${catKey}`} className="scroll-mt-[170px] lg:scroll-mt-24">
-                      <div className="flex items-center gap-3 sm:gap-4 mb-4 sm:mb-5">
-                        <h3 className="text-[18px] sm:text-[22px] font-light text-maroon whitespace-nowrap">
-                          {dishI18n[catKey]?.label || catKey}
-                        </h3>
-                        <div className="flex-1 h-px bg-beige" />
-                        <span className="font-body text-[10px] sm:text-[11px] text-gray tracking-[1px]">
-                          {category.items.length} {t("items")}
-                        </span>
-                      </div>
+                {visibleCategories.map(({ category, items: catItems }) => (
+                  <div key={category.id} id={`cat-${category.id}`} className="scroll-mt-[170px] lg:scroll-mt-24">
+                    <div className="flex items-center gap-3 sm:gap-4 mb-4 sm:mb-5">
+                      <h3 className="text-[18px] sm:text-[22px] font-light text-maroon whitespace-nowrap">
+                        {getLocalizedText(category.name, locale)}
+                      </h3>
+                      <div className="flex-1 h-px bg-beige" />
+                      <span className="font-body text-[10px] sm:text-[11px] text-gray tracking-[1px]">
+                        {catItems.length} {t("items")}
+                      </span>
+                    </div>
 
-                      <div className="grid grid-cols-2 gap-3 sm:gap-5 md:grid-cols-3 xl:grid-cols-4">
-                        {category.items.map((item, idx) => {
-                          const qty = getCartQuantity(catKey, idx);
-                          return (
-                            <div
-                              key={idx}
-                              className="group bg-white border border-beige transition-all duration-300 hover:shadow-[0_8px_30px_rgba(122,66,66,0.1)] overflow-hidden flex flex-col"
-                            >
-                              {/* Image */}
-                              {item.image ? (
-                                <div className="relative aspect-square overflow-hidden">
-                                  <Image
-                                    src={item.image}
-                                    alt={item.name}
-                                    fill
-                                    className="object-cover transition-transform duration-500 group-hover:scale-[1.05]"
-                                    sizes="(max-width: 640px) 50vw, (max-width: 768px) 50vw, (max-width: 1280px) 33vw, 25vw"
-                                  />
-                                </div>
-                              ) : (
-                                <div className="aspect-square bg-beige/30 flex items-center justify-center">
-                                  <span className="text-gray/30 text-4xl font-cjk">鮨</span>
-                                </div>
+                    <div className="grid grid-cols-2 gap-3 sm:gap-5 md:grid-cols-3 xl:grid-cols-4">
+                      {catItems.map((item) => {
+                        const qty = getCartQuantity(item.id);
+                        const itemName = getName(item);
+                        const itemDesc = getDesc(item);
+                        return (
+                          <div
+                            key={item.id}
+                            className="group bg-white border border-beige transition-all duration-300 hover:shadow-[0_8px_30px_rgba(122,66,66,0.1)] overflow-hidden flex flex-col"
+                          >
+                            {item.imageUrl ? (
+                              <div className="relative aspect-square overflow-hidden">
+                                <Image
+                                  src={item.imageUrl}
+                                  alt={itemName}
+                                  fill
+                                  className="object-cover transition-transform duration-500 group-hover:scale-[1.05]"
+                                  sizes="(max-width: 640px) 50vw, (max-width: 768px) 50vw, (max-width: 1280px) 33vw, 25vw"
+                                />
+                              </div>
+                            ) : (
+                              <div className="aspect-square bg-beige/30 flex items-center justify-center">
+                                <span className="text-gray/30 text-4xl font-cjk">鮨</span>
+                              </div>
+                            )}
+
+                            <div className="p-3.5 sm:p-4 flex flex-col flex-1">
+                              <h4 className="text-[20px] sm:text-[15px] font-medium sm:font-normal text-maroon leading-snug">
+                                {itemName}
+                              </h4>
+                              {itemDesc && (
+                                <p className="font-body text-[16px] sm:text-[12px] text-ink/60 mt-1 leading-relaxed line-clamp-2">
+                                  {itemDesc}
+                                </p>
                               )}
-
-                              {/* Info */}
-                              <div className="p-3.5 sm:p-4 flex flex-col flex-1">
-                                <h4 className="text-[20px] sm:text-[15px] font-medium sm:font-normal text-maroon leading-snug">
-                                  {dishI18n[catKey]?.items[idx]?.name || item.name}
-                                </h4>
-                                {(dishI18n[catKey]?.items[idx]?.desc || item.desc) && (
-                                  <p className="font-body text-[16px] sm:text-[12px] text-ink/60 mt-1 leading-relaxed line-clamp-2">
-                                    {dishI18n[catKey]?.items[idx]?.desc || item.desc}
-                                  </p>
-                                )}
-                                <div className="mt-auto pt-3">
-                                  <span className="text-[24px] sm:text-[16px] font-light text-camel block mb-2.5 sm:mb-3">
-                                    {formatPrice(item.price)}
-                                  </span>
-                                  {/* Add / Qty controls */}
-                                  {qty > 0 ? (
-                                    <div className="flex items-center justify-between border border-beige">
-                                      <button
-                                        onClick={() => updateQuantity(catKey, idx, -1)}
-                                        className="w-10 h-10 sm:w-8 sm:h-8 text-maroon font-body text-base sm:text-sm flex items-center justify-center cursor-pointer transition-colors hover:bg-beige/50 bg-transparent border-none"
-                                      >
-                                        −
-                                      </button>
-                                      <span className="font-body text-[15px] sm:text-[14px] text-maroon font-medium">
-                                        {qty}
-                                      </span>
-                                      <button
-                                        onClick={() => updateQuantity(catKey, idx, 1)}
-                                        className="w-10 h-10 sm:w-8 sm:h-8 text-maroon font-body text-base sm:text-sm flex items-center justify-center cursor-pointer transition-colors hover:bg-beige/50 bg-transparent border-none"
-                                      >
-                                        +
-                                      </button>
-                                    </div>
-                                  ) : (
+                              <div className="mt-auto pt-3">
+                                <span className="text-[24px] sm:text-[16px] font-light text-camel block mb-2.5 sm:mb-3">
+                                  {formatPrice(item.price)}
+                                </span>
+                                {qty > 0 ? (
+                                  <div className="flex items-center justify-between border border-beige">
                                     <button
-                                      onClick={() => addToCart(catKey, idx)}
-                                      className="w-full h-10 sm:h-9 bg-maroon text-white font-body text-[12px] sm:text-[11px] tracking-[2px] uppercase border-none cursor-pointer transition-all duration-300 hover:bg-maroon-dark active:scale-[0.97] flex items-center justify-center gap-2"
-                                    >
-                                      <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-                                        <path d="M8 3v10M3 8h10" />
-                                      </svg>
-                                      {t("add")}
-                                    </button>
-                                  )}
-                                </div>
+                                      onClick={() => updateQuantity(item.id, -1)}
+                                      className="w-10 h-10 sm:w-8 sm:h-8 text-maroon font-body text-base sm:text-sm flex items-center justify-center cursor-pointer transition-colors hover:bg-beige/50 bg-transparent border-none"
+                                    >−</button>
+                                    <span className="font-body text-[15px] sm:text-[14px] text-maroon font-medium">{qty}</span>
+                                    <button
+                                      onClick={() => updateQuantity(item.id, 1)}
+                                      className="w-10 h-10 sm:w-8 sm:h-8 text-maroon font-body text-base sm:text-sm flex items-center justify-center cursor-pointer transition-colors hover:bg-beige/50 bg-transparent border-none"
+                                    >+</button>
+                                  </div>
+                                ) : (
+                                  <button
+                                    onClick={() => addToCart(item.id)}
+                                    className="w-full h-10 sm:h-9 bg-maroon text-white font-body text-[12px] sm:text-[11px] tracking-[2px] uppercase border-none cursor-pointer transition-all duration-300 hover:bg-maroon-dark active:scale-[0.97] flex items-center justify-center gap-2"
+                                  >
+                                    <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                                      <path d="M8 3v10M3 8h10" />
+                                    </svg>
+                                    {t("add")}
+                                  </button>
+                                )}
                               </div>
                             </div>
-                          );
-                        })}
-                      </div>
+                          </div>
+                        );
+                      })}
                     </div>
-                  );
-                })}
+                  </div>
+                ))}
               </div>
             </div>
 
-            {/* Desktop cart sidebar - hidden on mobile */}
+            {/* Desktop cart sidebar */}
             <div className="w-[340px] shrink-0 max-lg:hidden">
               <div className="sticky top-[100px]">
                 <div className="bg-white border border-beige">
                   <div className="p-6 pb-4 border-b border-beige">
                     <div className="flex items-center justify-between">
-                      <h3 className="text-[20px] font-light text-maroon">
-                        {t("cart")}
-                      </h3>
+                      <h3 className="text-[20px] font-light text-maroon">{t("cart")}</h3>
                       {cartCount > 0 && (
-                        <span className="bg-maroon text-white font-body text-[11px] w-6 h-6 flex items-center justify-center">
-                          {cartCount}
-                        </span>
+                        <span className="bg-maroon text-white font-body text-[11px] w-6 h-6 flex items-center justify-center">{cartCount}</span>
                       )}
                     </div>
                   </div>
 
                   <div className="p-6 max-h-[400px] overflow-y-auto">
                     {cart.length === 0 ? (
-                      <p className="font-body text-sm text-gray text-center py-8 font-light">
-                        {t("emptyCart")}
-                      </p>
+                      <p className="font-body text-sm text-gray text-center py-8 font-light">{t("emptyCart")}</p>
                     ) : (
                       <div className="space-y-4">
-                        {cart.map((cartItem) => {
-                          const item = getItem(cartItem);
-                          if (!item) return null;
-                          return (
-                            <div
-                              key={`${cartItem.categoryKey}-${cartItem.itemIndex}`}
-                              className="flex items-center gap-3"
-                            >
-                              {item.image && (
-                                <div className="w-10 h-10 shrink-0 relative overflow-hidden">
-                                  <Image
-                                    src={item.image}
-                                    alt={getItemName(cartItem.categoryKey, cartItem.itemIndex, item.name)}
-                                    fill
-                                    className="object-cover"
-                                    sizes="40px"
-                                  />
-                                </div>
-                              )}
-                              <div className="flex-1 min-w-0">
-                                <div className="text-[14px] text-maroon font-light truncate">
-                                  {getItemName(cartItem.categoryKey, cartItem.itemIndex, item.name)}
-                                </div>
-                                <div className="font-body text-[12px] text-gray">
-                                  {formatPrice(item.price)} × {cartItem.quantity}
-                                </div>
-                              </div>
-                              <div className="flex items-center gap-2">
-                                <button
-                                  onClick={() =>
-                                    updateQuantity(cartItem.categoryKey, cartItem.itemIndex, -1)
-                                  }
-                                  className="w-7 h-7 border border-beige text-maroon font-body text-xs flex items-center justify-center cursor-pointer hover:border-maroon bg-transparent"
-                                >
-                                  −
-                                </button>
-                                <span className="font-body text-[13px] text-maroon w-4 text-center">
-                                  {cartItem.quantity}
-                                </span>
-                                <button
-                                  onClick={() =>
-                                    updateQuantity(cartItem.categoryKey, cartItem.itemIndex, 1)
-                                  }
-                                  className="w-7 h-7 border border-beige text-maroon font-body text-xs flex items-center justify-center cursor-pointer hover:border-maroon bg-transparent"
-                                >
-                                  +
-                                </button>
-                              </div>
-                              <div className="text-[14px] text-maroon font-light w-16 text-right">
-                                {formatPrice(item.price * cartItem.quantity)}
-                              </div>
-                            </div>
-                          );
-                        })}
+                        {cart.map((cartItem) => renderCartItem(cartItem, "d"))}
                       </div>
                     )}
                   </div>
@@ -568,12 +504,8 @@ export default function PedidoContent() {
                   {cart.length > 0 && (
                     <div className="p-6 pt-4 border-t border-beige">
                       <div className="flex justify-between items-baseline mb-5">
-                        <span className="font-body text-[13px] text-gray uppercase tracking-[2px]">
-                          {t("total")}
-                        </span>
-                        <span className="text-[28px] font-light text-maroon">
-                          {formatPrice(cartTotal)}
-                        </span>
+                        <span className="font-body text-[13px] text-gray uppercase tracking-[2px]">{t("total")}</span>
+                        <span className="text-[28px] font-light text-maroon">{formatPrice(cartTotal)}</span>
                       </div>
                       <button
                         onClick={() => setShowCheckout(true)}
@@ -601,7 +533,6 @@ export default function PedidoContent() {
             className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-beige shadow-[0_-4px_20px_rgba(0,0,0,0.08)]"
           >
             <div className="flex items-center gap-3 px-4 py-3">
-              {/* Expand cart */}
               <button
                 onClick={() => setShowMobileCart(!showMobileCart)}
                 className="flex items-center gap-3 flex-1 min-w-0 bg-transparent border-none cursor-pointer p-0 text-left"
@@ -619,11 +550,8 @@ export default function PedidoContent() {
                     {cart.length} {t("items")}
                   </div>
                 </div>
-                <span className="text-[20px] font-light text-maroon">
-                  {formatPrice(cartTotal)}
-                </span>
+                <span className="text-[20px] font-light text-maroon">{formatPrice(cartTotal)}</span>
               </button>
-              {/* Checkout button */}
               <button
                 onClick={() => setShowCheckout(true)}
                 className="px-5 py-3 bg-maroon text-white border-none font-body text-[12px] tracking-[2px] uppercase cursor-pointer shrink-0 active:scale-95 transition-transform"
@@ -656,94 +584,31 @@ export default function PedidoContent() {
               className="absolute bottom-0 left-0 right-0 bg-cream border-t border-beige max-h-[70vh] overflow-y-auto rounded-t-2xl"
             >
               <div className="p-5">
-                {/* Drag handle */}
                 <div className="w-10 h-1 bg-beige rounded-full mx-auto mb-4" />
-
                 <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-[20px] font-light text-maroon">
-                    {t("cart")}
-                  </h3>
+                  <h3 className="text-[20px] font-light text-maroon">{t("cart")}</h3>
                   <button
                     onClick={() => setShowMobileCart(false)}
                     className="w-8 h-8 flex items-center justify-center text-gray hover:text-maroon cursor-pointer bg-transparent border-none text-xl"
-                  >
-                    ×
-                  </button>
+                  >×</button>
                 </div>
 
                 <div className="space-y-3">
-                  {cart.map((cartItem) => {
-                    const item = getItem(cartItem);
-                    if (!item) return null;
-                    return (
-                      <div
-                        key={`m-${cartItem.categoryKey}-${cartItem.itemIndex}`}
-                        className="flex items-center gap-3 bg-white border border-beige p-3"
-                      >
-                        {item.image && (
-                          <div className="w-12 h-12 shrink-0 relative overflow-hidden">
-                            <Image
-                              src={item.image}
-                              alt={getItemName(cartItem.categoryKey, cartItem.itemIndex, item.name)}
-                              fill
-                              className="object-cover"
-                              sizes="48px"
-                            />
-                          </div>
-                        )}
-                        <div className="flex-1 min-w-0">
-                          <div className="text-[14px] text-maroon font-light truncate">
-                            {getItemName(cartItem.categoryKey, cartItem.itemIndex, item.name)}
-                          </div>
-                          <div className="font-body text-[12px] text-camel">
-                            {formatPrice(item.price)}
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <button
-                            onClick={() => updateQuantity(cartItem.categoryKey, cartItem.itemIndex, -1)}
-                            className="w-7 h-7 border border-beige text-maroon font-body text-sm flex items-center justify-center cursor-pointer bg-transparent"
-                          >
-                            −
-                          </button>
-                          <span className="font-body text-[14px] text-maroon w-4 text-center">
-                            {cartItem.quantity}
-                          </span>
-                          <button
-                            onClick={() => updateQuantity(cartItem.categoryKey, cartItem.itemIndex, 1)}
-                            className="w-7 h-7 border border-beige text-maroon font-body text-sm flex items-center justify-center cursor-pointer bg-transparent"
-                          >
-                            +
-                          </button>
-                        </div>
-                        <div className="text-[14px] text-maroon font-light w-14 text-right">
-                          {formatPrice(item.price * cartItem.quantity)}
-                        </div>
-                      </div>
-                    );
-                  })}
+                  {cart.map((cartItem) => renderCartItem(cartItem, "m", true))}
                 </div>
 
                 <div className="flex justify-between items-baseline mt-5 pt-4 border-t border-beige">
-                  <span className="font-body text-[13px] text-gray uppercase tracking-[2px]">
-                    {t("total")}
-                  </span>
-                  <span className="text-[26px] font-light text-maroon">
-                    {formatPrice(cartTotal)}
-                  </span>
+                  <span className="font-body text-[13px] text-gray uppercase tracking-[2px]">{t("total")}</span>
+                  <span className="text-[26px] font-light text-maroon">{formatPrice(cartTotal)}</span>
                 </div>
 
                 <button
-                  onClick={() => {
-                    setShowMobileCart(false);
-                    setShowCheckout(true);
-                  }}
+                  onClick={() => { setShowMobileCart(false); setShowCheckout(true); }}
                   className="w-full mt-4 px-8 py-4 bg-maroon text-white border-none font-heading text-[14px] tracking-[3px] uppercase cursor-pointer active:scale-[0.98] transition-transform"
                 >
                   {t("checkout")}
                 </button>
               </div>
-              {/* Extra padding for safe area */}
               <div className="h-[env(safe-area-inset-bottom,0px)]" />
             </motion.div>
           </motion.div>
@@ -771,16 +636,13 @@ export default function PedidoContent() {
               className="relative bg-cream border border-beige w-full sm:max-w-[520px] max-h-[90vh] overflow-y-auto rounded-t-2xl sm:rounded-none"
             >
               <div className="p-5 sm:p-[clamp(24px,4vw,40px)]">
-                {/* Drag handle on mobile */}
                 <div className="w-10 h-1 bg-beige rounded-full mx-auto mb-4 sm:hidden" />
 
                 {orderStatus !== "loading" && (
                   <button
                     onClick={resetCheckout}
                     className="absolute top-5 right-5 w-8 h-8 flex items-center justify-center text-gray hover:text-maroon transition-colors cursor-pointer bg-transparent border-none text-xl"
-                  >
-                    ×
-                  </button>
+                  >×</button>
                 )}
 
                 {/* Order success */}
@@ -791,22 +653,14 @@ export default function PedidoContent() {
                         <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
                       </svg>
                     </div>
-                    <h3 className="text-[24px] font-light text-maroon mb-2">
-                      {t("orderSuccessTitle")}
-                    </h3>
+                    <h3 className="text-[24px] font-light text-maroon mb-2">{t("orderSuccessTitle")}</h3>
                     {orderNumber && (
                       <div className="mb-4">
-                        <span className="font-body text-[11px] tracking-[3px] uppercase text-camel">
-                          {t("orderNumberLabel")}
-                        </span>
-                        <div className="text-[36px] font-light text-maroon">
-                          #{orderNumber}
-                        </div>
+                        <span className="font-body text-[11px] tracking-[3px] uppercase text-camel">{t("orderNumberLabel")}</span>
+                        <div className="text-[36px] font-light text-maroon">#{orderNumber}</div>
                       </div>
                     )}
-                    <p className="font-body text-[14px] text-gray font-light mb-6">
-                      {t("orderSuccessMsg")}
-                    </p>
+                    <p className="font-body text-[14px] text-gray font-light mb-6">{t("orderSuccessMsg")}</p>
                     <button
                       onClick={resetCheckout}
                       className="px-8 py-3 bg-maroon text-white font-body text-[13px] tracking-[2px] uppercase border-none cursor-pointer hover:bg-maroon-dark transition-colors"
@@ -816,24 +670,17 @@ export default function PedidoContent() {
                   </div>
                 ) : (
                   <>
-                    <p className="font-body text-[11px] tracking-[3px] uppercase text-camel mb-2">
-                      {t("checkoutSub")}
-                    </p>
-                    <h3 className="text-[24px] sm:text-[28px] font-light text-maroon mb-2">
-                      {t("checkoutTitle")}
-                    </h3>
+                    <p className="font-body text-[11px] tracking-[3px] uppercase text-camel mb-2">{t("checkoutSub")}</p>
+                    <h3 className="text-[24px] sm:text-[28px] font-light text-maroon mb-2">{t("checkoutTitle")}</h3>
                     <DiamondDivider />
 
-                    {/* Error message */}
                     {orderStatus === "error" && (
                       <motion.div
                         initial={{ opacity: 0, y: -10 }}
                         animate={{ opacity: 1, y: 0 }}
                         className="mt-4 p-4 bg-red-50 border border-red-200 text-center"
                       >
-                        <p className="font-body text-[14px] text-red-700 font-light">
-                          {t("orderErrorMsg")}
-                        </p>
+                        <p className="font-body text-[14px] text-red-700 font-light">{t("orderErrorMsg")}</p>
                       </motion.div>
                     )}
 
@@ -843,11 +690,11 @@ export default function PedidoContent() {
                         if (!item) return null;
                         return (
                           <div
-                            key={`co-${cartItem.categoryKey}-${cartItem.itemIndex}`}
+                            key={`co-${cartItem.itemId}`}
                             className="flex justify-between py-1.5 font-body text-[13px] text-gray font-light"
                           >
                             <span className="truncate mr-2">
-                              {getItemName(cartItem.categoryKey, cartItem.itemIndex, item.name)} × {cartItem.quantity}
+                              {getName(item)} × {cartItem.quantity}
                             </span>
                             <span className="text-maroon shrink-0">
                               {formatPrice(item.price * cartItem.quantity)}
@@ -862,20 +709,14 @@ export default function PedidoContent() {
                         </div>
                       )}
                       <div className="flex justify-between pt-3 mt-3 border-t border-beige">
-                        <span className="font-body text-[13px] text-gray uppercase tracking-[2px]">
-                          {t("total")}
-                        </span>
-                        <span className="text-[22px] font-light text-maroon">
-                          {formatPrice(finalTotal)}
-                        </span>
+                        <span className="font-body text-[13px] text-gray uppercase tracking-[2px]">{t("total")}</span>
+                        <span className="text-[22px] font-light text-maroon">{formatPrice(finalTotal)}</span>
                       </div>
                     </div>
 
                     {/* Coupon code */}
                     <div className="mb-6">
-                      <label className="font-body text-[11px] tracking-[3px] uppercase text-camel block mb-3">
-                        {t("couponLabel")}
-                      </label>
+                      <label className="font-body text-[11px] tracking-[3px] uppercase text-camel block mb-3">{t("couponLabel")}</label>
                       <div className="flex gap-2">
                         <input
                           value={couponCode}
@@ -888,11 +729,9 @@ export default function PedidoContent() {
                             }
                           }}
                           className={`flex-1 py-2.5 px-3 border font-body text-[14px] text-ink outline-none transition-colors bg-transparent ${
-                            couponStatus === "valid"
-                              ? "border-green-400"
-                              : couponStatus === "invalid"
-                                ? "border-red-400"
-                                : "border-beige focus:border-maroon"
+                            couponStatus === "valid" ? "border-green-400"
+                            : couponStatus === "invalid" ? "border-red-400"
+                            : "border-beige focus:border-maroon"
                           }`}
                           placeholder={t("couponPlaceholder")}
                         />
@@ -910,18 +749,14 @@ export default function PedidoContent() {
                         </p>
                       )}
                       {couponStatus === "invalid" && couponError && (
-                        <p className="font-body text-[12px] text-red-500 mt-1 font-light">
-                          {couponError}
-                        </p>
+                        <p className="font-body text-[12px] text-red-500 mt-1 font-light">{couponError}</p>
                       )}
                     </div>
 
                     <label className="font-body text-[11px] tracking-[3px] uppercase text-camel block mb-3">
                       {t("pickupTime")}
                       {checkoutErrors.pickupTime && (
-                        <span className="text-red-500 ml-2 normal-case tracking-normal">
-                          *{t("required")}
-                        </span>
+                        <span className="text-red-500 ml-2 normal-case tracking-normal">*{t("required")}</span>
                       )}
                     </label>
                     <div className="grid grid-cols-4 sm:flex sm:flex-wrap gap-2 mb-6">
@@ -948,10 +783,7 @@ export default function PedidoContent() {
                     <div className="space-y-0">
                       <input
                         value={checkoutName}
-                        onChange={(e) => {
-                          setCheckoutName(e.target.value);
-                          setCheckoutErrors((prev) => ({ ...prev, name: false }));
-                        }}
+                        onChange={(e) => { setCheckoutName(e.target.value); setCheckoutErrors((prev) => ({ ...prev, name: false })); }}
                         className={`w-full py-3.5 sm:py-4 border-0 border-b bg-transparent font-body text-[15px] text-ink outline-none transition-colors focus:border-b-maroon placeholder:text-gray ${
                           checkoutErrors.name ? "border-b-red-400" : "border-b-beige"
                         }`}
@@ -960,10 +792,7 @@ export default function PedidoContent() {
                       <input
                         type="tel"
                         value={checkoutPhone}
-                        onChange={(e) => {
-                          setCheckoutPhone(e.target.value);
-                          setCheckoutErrors((prev) => ({ ...prev, phone: false }));
-                        }}
+                        onChange={(e) => { setCheckoutPhone(e.target.value); setCheckoutErrors((prev) => ({ ...prev, phone: false })); }}
                         className={`w-full py-3.5 sm:py-4 border-0 border-b bg-transparent font-body text-[15px] text-ink outline-none transition-colors focus:border-b-maroon placeholder:text-gray ${
                           checkoutErrors.phone ? "border-b-red-400" : "border-b-beige"
                         }`}
@@ -972,10 +801,7 @@ export default function PedidoContent() {
                       <input
                         type="email"
                         value={checkoutEmail}
-                        onChange={(e) => {
-                          setCheckoutEmail(e.target.value);
-                          setCheckoutErrors((prev) => ({ ...prev, email: false }));
-                        }}
+                        onChange={(e) => { setCheckoutEmail(e.target.value); setCheckoutErrors((prev) => ({ ...prev, email: false })); }}
                         className={`w-full py-3.5 sm:py-4 border-0 border-b bg-transparent font-body text-[15px] text-ink outline-none transition-colors focus:border-b-maroon placeholder:text-gray ${
                           checkoutErrors.email ? "border-b-red-400" : "border-b-beige"
                         }`}
@@ -997,20 +823,16 @@ export default function PedidoContent() {
                     >
                       {orderStatus === "loading" ? t("submitting") : t("placeOrder")}
                     </button>
-                    <p className="font-body text-xs text-gray text-center mt-3 font-light">
-                      {t("orderNote")}
-                    </p>
+                    <p className="font-body text-xs text-gray text-center mt-3 font-light">{t("orderNote")}</p>
                   </>
                 )}
               </div>
-              {/* Safe area bottom padding */}
               <div className="h-[env(safe-area-inset-bottom,0px)]" />
             </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* Bottom spacer for mobile floating bar */}
       {cartCount > 0 && <div className="lg:hidden h-[68px]" />}
     </>
   );
