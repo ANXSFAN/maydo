@@ -38,9 +38,41 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { locale } = await params;
   const t = await getTranslations({ locale, namespace: "Metadata" });
 
+  const title = t("title");
+  const description = t("description");
+
   return {
-    title: t("title"),
-    description: t("description"),
+    title: {
+      default: title,
+      template: `%s | Sushi Maydo`,
+    },
+    description,
+    metadataBase: new URL("https://sushimaydo.com"),
+    openGraph: {
+      title,
+      description,
+      siteName: "Sushi Maydo",
+      locale,
+      type: "website",
+    },
+    twitter: {
+      card: "summary",
+      title,
+      description,
+    },
+    robots: {
+      index: true,
+      follow: true,
+    },
+    alternates: {
+      canonical: "/",
+      languages: {
+        es: "/es",
+        en: "/en",
+        ca: "/ca",
+        zh: "/zh",
+      },
+    },
   };
 }
 
