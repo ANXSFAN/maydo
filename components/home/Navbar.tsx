@@ -15,7 +15,7 @@ const mainNav = [
 ] as const;
 
 const moreNav = [
-  { key: "giftCard", href: "/gift-card" },
+  { key: "events", href: "/eventos" },
   { key: "gallery", href: "/galeria" },
   { key: "about", href: "/sobre" },
 ] as const;
@@ -61,9 +61,9 @@ export default function Navbar() {
   }, [menuOpen]);
 
   const localeLabels: Record<string, string> = {
-    es: "ES",
-    en: "EN",
-    ca: "CA",
+    es: "Español",
+    en: "English",
+    ca: "Català",
     zh: "中文",
   };
 
@@ -209,7 +209,7 @@ export default function Navbar() {
             <div ref={langRef} className="relative">
               <button
                 onClick={() => setLangOpen(!langOpen)}
-                className="bg-transparent border border-camel text-camel px-4 py-1.5 text-xs tracking-[2px] cursor-pointer font-body transition-all hover:bg-camel/10 flex items-center gap-1.5"
+                className="bg-transparent border border-camel text-camel px-3 py-1.5 text-[11px] tracking-[1px] cursor-pointer font-body transition-all hover:bg-camel/10 flex items-center gap-1.5 whitespace-nowrap"
               >
                 {localeLabels[locale]}
                 <svg width="8" height="5" viewBox="0 0 8 5" fill="none" className={`transition-transform duration-200 ${langOpen ? "rotate-180" : ""}`}>
@@ -224,7 +224,7 @@ export default function Navbar() {
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     exit={{ opacity: 0, y: -8, scale: 0.95 }}
                     transition={{ duration: 0.2, ease: "easeOut" }}
-                    className="absolute top-full right-0 mt-2 min-w-[100px] py-1.5 border border-white/10 origin-top-right"
+                    className="absolute top-full right-0 mt-2 min-w-[120px] py-1.5 border border-white/10 origin-top-right"
                     style={{ background: "rgba(92,46,46,0.98)", backdropFilter: "blur(20px)" }}
                   >
                     {Object.entries(localeLabels).map(([code, label]) => (
@@ -296,13 +296,13 @@ export default function Navbar() {
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ duration: 0.3, delay: 0.4 }}
-                className="flex gap-3"
+                className="grid grid-cols-2 gap-2.5 max-w-[300px]"
               >
                 {Object.entries(localeLabels).map(([code, label]) => (
                   <button
                     key={code}
                     onClick={() => switchToLocale(code)}
-                    className={`px-4 py-2.5 text-[13px] tracking-[2px] font-body font-light border cursor-pointer transition-all ${
+                    className={`px-3 py-2.5 text-[13px] tracking-[1px] font-body font-light border cursor-pointer transition-all text-center ${
                       code === locale
                         ? "border-camel text-camel bg-camel/10"
                         : "border-white/15 text-white/50 bg-transparent active:border-camel active:text-camel"

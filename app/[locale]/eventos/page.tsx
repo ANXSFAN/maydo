@@ -1,12 +1,11 @@
 import Navbar from "@/components/home/Navbar";
 import Footer from "@/components/home/Footer";
 import PageHero from "@/components/ui/PageHero";
-import ContactoContent from "@/components/contacto/ContactoContent";
-import FAQ from "@/components/home/FAQ";
+import EventosContent from "@/components/eventos/EventosContent";
 import { useTranslations } from "next-intl";
 
-export default function ContactoPage() {
-  const t = useTranslations("Contacto");
+export default function EventosPage() {
+  const t = useTranslations("Eventos");
 
   return (
     <>
@@ -15,10 +14,9 @@ export default function ContactoPage() {
         sub={t("sub")}
         title={t("title")}
         desc={t("heroDesc")}
-        kanji="繋"
+        kanji="宴"
       />
-      <ContactoContent />
-      <FAQ />
+      <EventosContent />
       <Footer />
     </>
   );

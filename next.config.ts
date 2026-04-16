@@ -20,6 +20,30 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+  async redirects() {
+    return [
+      {
+        source: "/:locale(es|en|ca|zh)/delivery",
+        destination: "/:locale/pedido",
+        permanent: true,
+      },
+      {
+        source: "/delivery",
+        destination: "/pedido",
+        permanent: true,
+      },
+      {
+        source: "/:locale(es|en|ca|zh)/gift-card",
+        destination: "/:locale",
+        permanent: false,
+      },
+      {
+        source: "/gift-card",
+        destination: "/",
+        permanent: false,
+      },
+    ];
+  },
 };
 
 export default withNextIntl(nextConfig);

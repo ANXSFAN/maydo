@@ -8,6 +8,7 @@ import FadeIn from "@/components/ui/FadeIn";
 import DiamondDivider from "@/components/ui/DiamondDivider";
 import type { MenuCategoryData, MenuItemData } from "@/lib/menu-types";
 import { getLocalizedText } from "@/lib/menu-types";
+import AllergenBadges from "@/components/ui/AllergenBadges";
 
 type Props = {
   categories: MenuCategoryData[];
@@ -21,14 +22,27 @@ type CartItem = {
   quantity: number;
 };
 
-type OrderStatus = "idle" | "loading" | "success" | "error";
+type OrderType = "pickup" | "delivery";
+type OrderStatus = "idle" | "loading" | "error";
 
 const PICKUP_SLOTS = [
-  "13:00", "13:30", "14:00", "14:30", "15:00", "15:30",
+  "00:00", "01:00", "02:00", "03:00", "04:00", "05:00",
+  "06:00", "07:00", "08:00", "09:00", "10:00", "11:00",
+  "12:00", "13:00", "13:30", "14:00", "14:30", "15:00", "15:30",
+  "16:00", "17:00", "18:00", "19:00",
   "20:00", "20:30", "21:00", "21:30", "22:00", "22:30",
+  "23:00", "23:30", "23:59",
 ];
 
 const CART_STORAGE_KEY = "sushi-maydo-cart";
+const DELIVERY_FEE = 2;
+const ASAP_VALUE = "ASAP";
+
+// Postal codes within ~2km of Pl. d'Europa 102, L'Hospitalet de Llobregat
+const DELIVERY_POSTCODES = new Set([
+  "08901", "08902", "08903", "08904", "08905", "08906", "08907", "08908",
+  "08028", "08014",
+]);
 
 export default function PedidoContent({ categories, items }: Props) {
   const t = useTranslations("Pedido");
@@ -47,7 +61,6 @@ export default function PedidoContent({ categories, items }: Props) {
   const [checkoutNotes, setCheckoutNotes] = useState("");
   const [selectedPickupTime, setSelectedPickupTime] = useState("");
   const [orderStatus, setOrderStatus] = useState<OrderStatus>("idle");
-  const [orderNumber, setOrderNumber] = useState<number | null>(null);
   const [checkoutErrors, setCheckoutErrors] = useState<Record<string, boolean>>({});
 
   // Coupon state
@@ -55,6 +68,14 @@ export default function PedidoContent({ categories, items }: Props) {
   const [couponStatus, setCouponStatus] = useState<"idle" | "loading" | "valid" | "invalid">("idle");
   const [couponDiscount, setCouponDiscount] = useState(0);
   const [couponError, setCouponError] = useState("");
+
+  // Delivery state
+  const [orderType, setOrderType] = useState<OrderType>("pickup");
+  const [deliveryStreet, setDeliveryStreet] = useState("");
+  const [deliveryFloor, setDeliveryFloor] = useState("");
+  const [deliveryPostal, setDeliveryPostal] = useState("");
+  const [deliveryCity, setDeliveryCity] = useState("");
+  const [deliveryError, setDeliveryError] = useState("");
 
   // ---- Derived data ----
   const itemMap = useMemo(() => {
@@ -81,6 +102,32 @@ export default function PedidoContent({ categories, items }: Props) {
       return categoriesWithItems.filter((c) => sushiCatIds.has(c.category.id));
     return categoriesWithItems.filter((c) => !sushiCatIds.has(c.category.id));
   }, [activeSection, categoriesWithItems, sushiCatIds]);
+
+  // ---- Time slot filtering ----
+  const [nowMinutes, setNowMinutes] = useState(() => {
+    const d = new Date();
+    return d.getHours() * 60 + d.getMinutes();
+  });
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      const d = new Date();
+      setNowMinutes(d.getHours() * 60 + d.getMinutes());
+    }, 60_000);
+    return () => clearInterval(timer);
+  }, []);
+
+  const availableSlots = useMemo(() => {
+    const futureSlots = PICKUP_SLOTS.filter((slot) => {
+      const [h, m] = slot.split(":").map(Number);
+      return h * 60 + m > nowMinutes;
+    });
+    if (orderType === "delivery" && futureSlots.length > 0) {
+      // Replace first slot with ASAP
+      return [ASAP_VALUE, ...futureSlots.slice(1)];
+    }
+    return futureSlots;
+  }, [nowMinutes, orderType]);
 
   // ---- Cart helpers ----
   useEffect(() => {
@@ -164,7 +211,7 @@ export default function PedidoContent({ categories, items }: Props) {
     return () => observers.forEach((o) => o.disconnect());
   }, [visibleCategories]);
 
-  const finalTotal = Math.max(0, cartTotal - couponDiscount);
+  const finalTotal = Math.max(0, cartTotal - couponDiscount) + (orderType === "delivery" ? DELIVERY_FEE : 0);
 
   const validateCoupon = async () => {
     if (!couponCode.trim()) return;
@@ -204,6 +251,16 @@ export default function PedidoContent({ categories, items }: Props) {
     if (!checkoutEmail.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(checkoutEmail))
       errs.email = true;
     if (!selectedPickupTime) errs.pickupTime = true;
+    if (orderType === "delivery") {
+      if (!deliveryStreet.trim()) errs.street = true;
+      if (!deliveryPostal.trim()) {
+        errs.postal = true;
+      } else if (!DELIVERY_POSTCODES.has(deliveryPostal.trim())) {
+        errs.postal = true;
+        setDeliveryError(t("deliveryTooFar"));
+      }
+      if (!deliveryCity.trim()) errs.city = true;
+    }
     setCheckoutErrors(errs);
     return Object.keys(errs).length === 0;
   };
@@ -223,7 +280,7 @@ export default function PedidoContent({ categories, items }: Props) {
         };
       });
 
-      const res = await fetch("/api/orders", {
+      const res = await fetch("/api/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -234,19 +291,25 @@ export default function PedidoContent({ categories, items }: Props) {
           notes: checkoutNotes.trim() || null,
           items: orderItems,
           total: finalTotal,
-          order_type: "pickup",
+          order_type: orderType,
+          delivery_address: orderType === "delivery"
+            ? [deliveryStreet, deliveryFloor, deliveryPostal, deliveryCity].filter(Boolean).join(", ")
+            : "",
+          delivery_fee: orderType === "delivery" ? DELIVERY_FEE : 0,
           discount_code: couponStatus === "valid" ? couponCode.trim() : null,
           discount_amount: couponDiscount,
+          locale,
         }),
       });
 
       if (!res.ok) throw new Error("Failed");
 
       const data = await res.json();
-      setOrderNumber(data.order_number);
-      setOrderStatus("success");
-      setCart([]);
-      localStorage.removeItem(CART_STORAGE_KEY);
+      if (data.url) {
+        window.location.href = data.url;
+      } else {
+        throw new Error("No checkout URL");
+      }
     } catch {
       setOrderStatus("error");
     }
@@ -255,7 +318,6 @@ export default function PedidoContent({ categories, items }: Props) {
   const resetCheckout = () => {
     setShowCheckout(false);
     setOrderStatus("idle");
-    setOrderNumber(null);
     setCheckoutName("");
     setCheckoutPhone("");
     setCheckoutEmail("");
@@ -266,6 +328,11 @@ export default function PedidoContent({ categories, items }: Props) {
     setCouponStatus("idle");
     setCouponDiscount(0);
     setCouponError("");
+    setDeliveryStreet("");
+    setDeliveryFloor("");
+    setDeliveryPostal("");
+    setDeliveryCity("");
+    setDeliveryError("");
   };
 
   // ---- Shared cart item renderer ----
@@ -440,6 +507,7 @@ export default function PedidoContent({ categories, items }: Props) {
                                   {itemDesc}
                                 </p>
                               )}
+                              <AllergenBadges allergens={item.allergens} compact />
                               <div className="mt-auto pt-3">
                                 <span className="text-[24px] sm:text-[16px] font-light text-camel block mb-2.5 sm:mb-3">
                                   {formatPrice(item.price)}
@@ -645,31 +713,7 @@ export default function PedidoContent({ categories, items }: Props) {
                   >×</button>
                 )}
 
-                {/* Order success */}
-                {orderStatus === "success" ? (
-                  <div className="text-center py-8">
-                    <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-green-600">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
-                      </svg>
-                    </div>
-                    <h3 className="text-[24px] font-light text-maroon mb-2">{t("orderSuccessTitle")}</h3>
-                    {orderNumber && (
-                      <div className="mb-4">
-                        <span className="font-body text-[11px] tracking-[3px] uppercase text-camel">{t("orderNumberLabel")}</span>
-                        <div className="text-[36px] font-light text-maroon">#{orderNumber}</div>
-                      </div>
-                    )}
-                    <p className="font-body text-[14px] text-gray font-light mb-6">{t("orderSuccessMsg")}</p>
-                    <button
-                      onClick={resetCheckout}
-                      className="px-8 py-3 bg-maroon text-white font-body text-[13px] tracking-[2px] uppercase border-none cursor-pointer hover:bg-maroon-dark transition-colors"
-                    >
-                      {t("backToMenu")}
-                    </button>
-                  </div>
-                ) : (
-                  <>
+                <>
                     <p className="font-body text-[11px] tracking-[3px] uppercase text-camel mb-2">{t("checkoutSub")}</p>
                     <h3 className="text-[24px] sm:text-[28px] font-light text-maroon mb-2">{t("checkoutTitle")}</h3>
                     <DiamondDivider />
@@ -706,6 +750,12 @@ export default function PedidoContent({ categories, items }: Props) {
                         <div className="flex justify-between py-1.5 font-body text-[13px] text-green-600 font-light border-t border-beige mt-2 pt-2">
                           <span>{t("discount")}</span>
                           <span>-{formatPrice(couponDiscount)}</span>
+                        </div>
+                      )}
+                      {orderType === "delivery" && (
+                        <div className="flex justify-between py-1.5 font-body text-[13px] text-gray font-light border-t border-beige mt-2 pt-2">
+                          <span>{t("deliveryFee")}</span>
+                          <span>{formatPrice(DELIVERY_FEE)}</span>
                         </div>
                       )}
                       <div className="flex justify-between pt-3 mt-3 border-t border-beige">
@@ -753,35 +803,137 @@ export default function PedidoContent({ categories, items }: Props) {
                       )}
                     </div>
 
+                    {/* Order type toggle */}
                     <label className="font-body text-[11px] tracking-[3px] uppercase text-camel block mb-3">
-                      {t("pickupTime")}
-                      {checkoutErrors.pickupTime && (
-                        <span className="text-red-500 ml-2 normal-case tracking-normal">*{t("required")}</span>
-                      )}
+                      {t("orderTypeLabel")}
                     </label>
-                    <div className="grid grid-cols-4 sm:flex sm:flex-wrap gap-2 mb-6">
-                      {PICKUP_SLOTS.map((slot) => (
+                    <div className="flex gap-2 mb-6">
+                      {(["pickup", "delivery"] as OrderType[]).map((type) => (
                         <button
-                          key={slot}
+                          key={type}
                           onClick={() => {
-                            setSelectedPickupTime(slot);
-                            setCheckoutErrors((e) => ({ ...e, pickupTime: false }));
+                            setOrderType(type);
+                            setSelectedPickupTime("");
+                            setDeliveryError("");
+                            setCheckoutErrors((e) => ({ ...e, street: false, postal: false, city: false, pickupTime: false }));
                           }}
-                          className={`px-3 sm:px-4 py-2 border text-[12px] sm:text-[13px] font-body cursor-pointer transition-all ${
-                            selectedPickupTime === slot
+                          className={`flex-1 py-3 border text-[13px] font-body cursor-pointer transition-all ${
+                            orderType === type
                               ? "bg-maroon text-white border-maroon"
-                              : checkoutErrors.pickupTime
-                                ? "border-red-300 text-maroon bg-transparent hover:border-maroon"
-                                : "border-beige text-maroon bg-transparent hover:border-maroon"
+                              : "bg-transparent text-maroon border-beige hover:border-maroon"
                           }`}
                         >
-                          {slot}
+                          {type === "pickup" ? t("pickup") : t("delivery")}
                         </button>
                       ))}
                     </div>
 
+                    {/* Delivery address fields */}
+                    {orderType === "delivery" && (
+                      <div className="mb-6">
+                        <label className="font-body text-[11px] tracking-[3px] uppercase text-camel block mb-3">
+                          {t("deliveryAddress")}
+                        </label>
+                        <div className="space-y-2">
+                          <input
+                            type="text"
+                            autoComplete="street-address"
+                            value={deliveryStreet}
+                            onChange={(e) => {
+                              setDeliveryStreet(e.target.value);
+                              setDeliveryError("");
+                              setCheckoutErrors((prev) => ({ ...prev, street: false }));
+                            }}
+                            className={`w-full py-3 px-3 border font-body text-[14px] text-ink outline-none transition-colors bg-transparent ${
+                              checkoutErrors.street || deliveryError
+                                ? "border-red-400"
+                                : "border-beige focus:border-maroon"
+                            }`}
+                            placeholder={t("streetPlaceholder")}
+                          />
+                          <input
+                            type="text"
+                            autoComplete="address-line2"
+                            value={deliveryFloor}
+                            onChange={(e) => setDeliveryFloor(e.target.value)}
+                            className="w-full py-3 px-3 border border-beige font-body text-[14px] text-ink outline-none transition-colors bg-transparent focus:border-maroon"
+                            placeholder={t("floorPlaceholder")}
+                          />
+                          <div className="flex gap-2">
+                            <input
+                              type="text"
+                              autoComplete="postal-code"
+                              value={deliveryPostal}
+                              onChange={(e) => {
+                                setDeliveryPostal(e.target.value);
+                                setDeliveryError("");
+                                setCheckoutErrors((prev) => ({ ...prev, postal: false }));
+                              }}
+                              className={`w-[120px] py-3 px-3 border font-body text-[14px] text-ink outline-none transition-colors bg-transparent ${
+                                checkoutErrors.postal
+                                  ? "border-red-400"
+                                  : "border-beige focus:border-maroon"
+                              }`}
+                              placeholder={t("postalPlaceholder")}
+                            />
+                            <input
+                              type="text"
+                              autoComplete="address-level2"
+                              value={deliveryCity}
+                              onChange={(e) => {
+                                setDeliveryCity(e.target.value);
+                                setCheckoutErrors((prev) => ({ ...prev, city: false }));
+                              }}
+                              className={`flex-1 py-3 px-3 border font-body text-[14px] text-ink outline-none transition-colors bg-transparent ${
+                                checkoutErrors.city
+                                  ? "border-red-400"
+                                  : "border-beige focus:border-maroon"
+                              }`}
+                              placeholder={t("cityPlaceholder")}
+                            />
+                          </div>
+                        </div>
+                        {deliveryError && (
+                          <p className="font-body text-[12px] text-red-500 mt-2 font-light">{deliveryError}</p>
+                        )}
+                        <p className="font-body text-[11px] text-gray mt-2 font-light">{t("deliveryRadius")}</p>
+                      </div>
+                    )}
+
+                    <label className="font-body text-[11px] tracking-[3px] uppercase text-camel block mb-3">
+                      {orderType === "delivery" ? t("deliveryTime") : t("pickupTime")}
+                      {checkoutErrors.pickupTime && (
+                        <span className="text-red-500 ml-2 normal-case tracking-normal">*{t("required")}</span>
+                      )}
+                    </label>
+                    {availableSlots.length === 0 ? (
+                      <p className="font-body text-[13px] text-gray font-light mb-6">{t("noSlotsAvailable")}</p>
+                    ) : (
+                      <div className="grid grid-cols-3 sm:flex sm:flex-wrap gap-2 mb-6">
+                        {availableSlots.map((slot) => (
+                          <button
+                            key={slot}
+                            onClick={() => {
+                              setSelectedPickupTime(slot);
+                              setCheckoutErrors((e) => ({ ...e, pickupTime: false }));
+                            }}
+                            className={`px-3 sm:px-4 py-2 border text-[12px] sm:text-[13px] font-body cursor-pointer transition-all ${
+                              selectedPickupTime === slot
+                                ? "bg-maroon text-white border-maroon"
+                                : checkoutErrors.pickupTime
+                                  ? "border-red-300 text-maroon bg-transparent hover:border-maroon"
+                                  : "border-beige text-maroon bg-transparent hover:border-maroon"
+                            }`}
+                          >
+                            {slot === ASAP_VALUE ? t("asap") : slot}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+
                     <div className="space-y-0">
                       <input
+                        autoComplete="name"
                         value={checkoutName}
                         onChange={(e) => { setCheckoutName(e.target.value); setCheckoutErrors((prev) => ({ ...prev, name: false })); }}
                         className={`w-full py-3.5 sm:py-4 border-0 border-b bg-transparent font-body text-[15px] text-ink outline-none transition-colors focus:border-b-maroon placeholder:text-gray ${
@@ -791,6 +943,7 @@ export default function PedidoContent({ categories, items }: Props) {
                       />
                       <input
                         type="tel"
+                        autoComplete="tel"
                         value={checkoutPhone}
                         onChange={(e) => { setCheckoutPhone(e.target.value); setCheckoutErrors((prev) => ({ ...prev, phone: false })); }}
                         className={`w-full py-3.5 sm:py-4 border-0 border-b bg-transparent font-body text-[15px] text-ink outline-none transition-colors focus:border-b-maroon placeholder:text-gray ${
@@ -800,6 +953,7 @@ export default function PedidoContent({ categories, items }: Props) {
                       />
                       <input
                         type="email"
+                        autoComplete="email"
                         value={checkoutEmail}
                         onChange={(e) => { setCheckoutEmail(e.target.value); setCheckoutErrors((prev) => ({ ...prev, email: false })); }}
                         className={`w-full py-3.5 sm:py-4 border-0 border-b bg-transparent font-body text-[15px] text-ink outline-none transition-colors focus:border-b-maroon placeholder:text-gray ${
@@ -821,11 +975,10 @@ export default function PedidoContent({ categories, items }: Props) {
                       disabled={orderStatus === "loading"}
                       className="w-full mt-6 sm:mt-8 px-12 py-4 sm:py-[18px] bg-maroon text-white border-none font-heading text-[14px] sm:text-base tracking-[3px] uppercase cursor-pointer transition-all duration-400 hover:bg-maroon-dark active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed"
                     >
-                      {orderStatus === "loading" ? t("submitting") : t("placeOrder")}
+                      {orderStatus === "loading" ? t("redirecting") : t("payNow")}
                     </button>
-                    <p className="font-body text-xs text-gray text-center mt-3 font-light">{t("orderNote")}</p>
+                    <p className="font-body text-xs text-gray text-center mt-3 font-light">{t("paymentSecure")}</p>
                   </>
-                )}
               </div>
               <div className="h-[env(safe-area-inset-bottom,0px)]" />
             </motion.div>

@@ -7,14 +7,22 @@ import FadeIn from "@/components/ui/FadeIn";
 import DiamondDivider from "@/components/ui/DiamondDivider";
 
 type FormStatus = "idle" | "loading" | "success" | "error";
+type FormTab = "contact" | "event";
 
 export default function ContactoContent() {
   const t = useTranslations("Contacto");
+  const [activeTab, setActiveTab] = useState<FormTab>("contact");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [message, setMessage] = useState("");
   const [formStatus, setFormStatus] = useState<FormStatus>("idle");
   const [errors, setErrors] = useState<Record<string, boolean>>({});
+
+  // Event-specific fields
+  const [eventType, setEventType] = useState("");
+  const [eventGuests, setEventGuests] = useState("");
+  const [eventDate, setEventDate] = useState("");
+  const [eventBudget, setEventBudget] = useState("");
 
   const validate = () => {
     const newErrors: Record<string, boolean> = {};
@@ -26,9 +34,53 @@ export default function ContactoContent() {
     return Object.keys(newErrors).length === 0;
   };
 
+  const resetForm = () => {
+    setName("");
+    setEmail("");
+    setMessage("");
+    setEventType("");
+    setEventGuests("");
+    setEventDate("");
+    setEventBudget("");
+    setErrors({});
+  };
+
   const handleSubmit = async () => {
-    // TODO: 等 Orderlix 补全 contacts 模块后启用
-    setFormStatus("error");
+    if (!validate()) return;
+    setFormStatus("loading");
+
+    try {
+      const payload: Record<string, unknown> = {
+        name: name.trim(),
+        email: email.trim(),
+        message: message.trim(),
+      };
+
+      if (activeTab === "event") {
+        payload.type = "event";
+        payload.eventDetails = {
+          eventType,
+          guests: eventGuests,
+          date: eventDate,
+          budget: eventBudget,
+        };
+      }
+
+      const res = await fetch("/api/contact", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      if (res.ok) {
+        setFormStatus("success");
+        resetForm();
+      } else {
+        setFormStatus("error");
+      }
+    } catch {
+      setFormStatus("error");
+    }
   };
 
   return (
@@ -122,9 +174,26 @@ export default function ContactoContent() {
                 {t("formTitle")}
               </h3>
               <DiamondDivider />
-              <p className="font-body text-[14px] text-gray font-light leading-relaxed mb-8">
+              <p className="font-body text-[14px] text-gray font-light leading-relaxed mb-6">
                 {t("formDesc")}
               </p>
+
+              {/* Tab switcher */}
+              <div className="flex border-b border-beige mb-6">
+                {(["contact", "event"] as const).map((tab) => (
+                  <button
+                    key={tab}
+                    onClick={() => { setActiveTab(tab); setFormStatus("idle"); }}
+                    className={`flex-1 pb-3 font-body text-[12px] tracking-[2px] uppercase border-0 border-b-2 bg-transparent cursor-pointer transition-colors ${
+                      activeTab === tab
+                        ? "text-maroon border-b-maroon"
+                        : "text-gray border-b-transparent hover:text-maroon/60"
+                    }`}
+                  >
+                    {t(tab === "contact" ? "tabContact" : "tabEvent")}
+                  </button>
+                ))}
+              </div>
 
               {/* Success / Error messages */}
               <AnimatePresence mode="wait">
@@ -198,6 +267,48 @@ export default function ContactoContent() {
                       }`}
                       placeholder={t("email")}
                     />
+                    {activeTab === "event" && (
+                      <>
+                        <select
+                          value={eventType}
+                          onChange={(e) => setEventType(e.target.value)}
+                          className="w-full py-4 border-0 border-b border-b-beige bg-transparent font-body text-[15px] text-ink outline-none transition-colors focus:border-b-maroon appearance-none cursor-pointer"
+                        >
+                          <option value="">{t("eventType")}</option>
+                          <option value="corporate">{t("eventCorporate")}</option>
+                          <option value="birthday">{t("eventBirthday")}</option>
+                          <option value="celebration">{t("eventCelebration")}</option>
+                          <option value="other">{t("eventOther")}</option>
+                        </select>
+                        <div className="flex gap-4">
+                          <input
+                            type="number"
+                            value={eventGuests}
+                            onChange={(e) => setEventGuests(e.target.value)}
+                            className="w-1/2 py-4 border-0 border-b border-b-beige bg-transparent font-body text-[15px] text-ink outline-none transition-colors focus:border-b-maroon placeholder:text-gray"
+                            placeholder={t("eventGuests")}
+                            min="1"
+                          />
+                          <input
+                            type="date"
+                            value={eventDate}
+                            onChange={(e) => setEventDate(e.target.value)}
+                            className="w-1/2 py-4 border-0 border-b border-b-beige bg-transparent font-body text-[15px] text-ink outline-none transition-colors focus:border-b-maroon"
+                          />
+                        </div>
+                        <select
+                          value={eventBudget}
+                          onChange={(e) => setEventBudget(e.target.value)}
+                          className="w-full py-4 border-0 border-b border-b-beige bg-transparent font-body text-[15px] text-ink outline-none transition-colors focus:border-b-maroon appearance-none cursor-pointer"
+                        >
+                          <option value="">{t("eventBudget")}</option>
+                          <option value="500-1000">500€ - 1.000€</option>
+                          <option value="1000-2000">1.000€ - 2.000€</option>
+                          <option value="2000-5000">2.000€ - 5.000€</option>
+                          <option value="5000+">5.000€+</option>
+                        </select>
+                      </>
+                    )}
                     <textarea
                       value={message}
                       onChange={(e) => {
@@ -208,7 +319,7 @@ export default function ContactoContent() {
                       className={`w-full py-4 border-0 border-b bg-transparent font-body text-[15px] text-ink outline-none transition-colors focus:border-b-maroon placeholder:text-gray resize-none ${
                         errors.message ? "border-b-red-400" : "border-b-beige"
                       }`}
-                      placeholder={t("message")}
+                      placeholder={activeTab === "event" ? t("eventMessage") : t("message")}
                     />
                   </div>
 

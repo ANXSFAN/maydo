@@ -11,8 +11,7 @@ const pageLinks = [
   { key: "menu", href: "/carta" },
   { key: "reservations", href: "/reservas" },
   { key: "order", href: "/pedido" },
-  { key: "delivery", href: "/delivery" },
-  { key: "giftCard", href: "/gift-card" },
+  { key: "events", href: "/eventos" },
   { key: "gallery", href: "/galeria" },
   { key: "about", href: "/sobre" },
 ] as const;
@@ -48,7 +47,7 @@ export default function Footer() {
                   href={link.href}
                   className="font-body text-xs text-white/30 no-underline tracking-wider transition-colors hover:text-camel"
                 >
-                  {link.key === "menu" || link.key === "reservations" || link.key === "gallery"
+                  {link.key === "menu" || link.key === "reservations" || link.key === "gallery" || link.key === "events"
                     ? nav(link.key)
                     : t(link.key)}
                 </Link>
@@ -96,14 +95,50 @@ export default function Footer() {
             <p className="font-body text-[13px] text-white/50 leading-8 font-light whitespace-pre-line">
               {t("address")}
             </p>
+
+            {/* Delivery platforms */}
+            {(() => {
+              const platforms = (["uberEats", "glovo", "justEat"] as const)
+                .map((p) => ({ key: p, url: t(`${p}Url`) }))
+                .filter((p) => p.url && p.url !== "#");
+              if (platforms.length === 0) return null;
+              return (
+                <>
+                  <h4 className="font-body text-[11px] tracking-[3px] text-camel mt-8 mb-4 font-normal">
+                    {t("deliveryPlatforms")}
+                  </h4>
+                  <div className="flex gap-4 max-md:justify-center">
+                    {platforms.map(({ key, url }) => (
+                      <a
+                        key={key}
+                        href={url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="font-body text-[12px] text-white/40 no-underline border border-white/15 px-3 py-1.5 rounded transition-colors hover:text-camel hover:border-camel/40"
+                      >
+                        {t(key)}
+                      </a>
+                    ))}
+                  </div>
+                </>
+              );
+            })()}
           </div>
         </div>
 
         {/* Bottom bar */}
         <div className="border-t border-white/[0.08] pt-[30px] flex justify-between items-center flex-wrap gap-4">
-          <p className="font-body text-xs text-white/25 font-light">
-            {t("copyright")}
-          </p>
+          <div className="flex items-center gap-4 flex-wrap">
+            <p className="font-body text-xs text-white/25 font-light">
+              {t("copyright")}
+            </p>
+            <Link
+              href="/privacidad"
+              className="font-body text-xs text-white/30 no-underline tracking-wider transition-colors hover:text-camel"
+            >
+              {t("privacy")}
+            </Link>
+          </div>
           <div className="flex gap-6">
             {socials.map((s) => (
               <a
