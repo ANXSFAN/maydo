@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Resend } from "resend";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
-
 const RESTAURANT_EMAIL = "sushimaydobcnplazaeuropa@gmail.com";
 
 export async function POST(request: NextRequest) {
@@ -70,6 +68,15 @@ export async function POST(request: NextRequest) {
       </div>
     `;
 
+    if (!process.env.RESEND_API_KEY) {
+      console.error("RESEND_API_KEY not configured");
+      return NextResponse.json(
+        { error: "Email service not configured" },
+        { status: 500 }
+      );
+    }
+
+    const resend = new Resend(process.env.RESEND_API_KEY);
     const { error } = await resend.emails.send({
       from: "Sushi Maydo <noreply@sushimaydo.com>",
       to: [RESTAURANT_EMAIL],
