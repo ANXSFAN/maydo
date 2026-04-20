@@ -346,8 +346,8 @@ export default function PedidoContent({ categories, items }: Props) {
         className={`flex items-center gap-3 ${compact ? "bg-white border border-beige p-3" : ""}`}
       >
         {item.imageUrl && (
-          <div className={`${imgSize} shrink-0 relative overflow-hidden`}>
-            <Image src={item.imageUrl} alt={getName(item)} fill className="object-cover" sizes={compact ? "48px" : "40px"} />
+          <div className={`${imgSize} shrink-0 relative overflow-hidden bg-white`}>
+            <Image src={item.imageUrl} alt={getName(item)} fill className="object-contain" sizes={compact ? "48px" : "40px"} />
           </div>
         )}
         <div className="flex-1 min-w-0">
@@ -483,12 +483,12 @@ export default function PedidoContent({ categories, items }: Props) {
                             className="group bg-white border border-beige transition-all duration-300 hover:shadow-[0_8px_30px_rgba(122,66,66,0.1)] overflow-hidden flex flex-col"
                           >
                             {item.imageUrl ? (
-                              <div className="relative aspect-square overflow-hidden">
+                              <div className="relative aspect-square overflow-hidden bg-white">
                                 <Image
                                   src={item.imageUrl}
                                   alt={itemName}
                                   fill
-                                  className="object-cover transition-transform duration-500 group-hover:scale-[1.05]"
+                                  className="object-contain transition-transform duration-500 group-hover:scale-[1.05]"
                                   sizes="(max-width: 640px) 50vw, (max-width: 768px) 50vw, (max-width: 1280px) 33vw, 25vw"
                                 />
                               </div>
