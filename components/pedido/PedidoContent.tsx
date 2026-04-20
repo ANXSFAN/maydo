@@ -9,6 +9,7 @@ import DiamondDivider from "@/components/ui/DiamondDivider";
 import type { MenuCategoryData, MenuItemData } from "@/lib/menu-types";
 import { getLocalizedText } from "@/lib/menu-types";
 import AllergenBadges from "@/components/ui/AllergenBadges";
+import MenuItemOptionsModal, { type SelectedOption } from "@/components/pedido/MenuItemOptionsModal";
 
 type Props = {
   categories: MenuCategoryData[];
@@ -18,9 +19,18 @@ type Props = {
 type Section = "all" | "sushi" | "cocina";
 
 type CartItem = {
+  lineId: string;
   itemId: string;
   quantity: number;
+  optionsSelected?: SelectedOption[];
+  priceModifier: number;
 };
+
+const newLineId = () =>
+  Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
+
+const hasOptions = (item: MenuItemData) =>
+  Array.isArray(item.options) && (item.options as unknown[]).length > 0;
 
 type OrderType = "pickup" | "delivery";
 type OrderStatus = "idle" | "loading" | "error";
@@ -52,6 +62,7 @@ export default function PedidoContent({ categories, items }: Props) {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [showCheckout, setShowCheckout] = useState(false);
   const [showMobileCart, setShowMobileCart] = useState(false);
+  const [optionsModalItem, setOptionsModalItem] = useState<MenuItemData | null>(null);
   const catNavRef = useRef<HTMLDivElement>(null);
 
   // Checkout form state
@@ -135,7 +146,17 @@ export default function PedidoContent({ categories, items }: Props) {
       const saved = localStorage.getItem(CART_STORAGE_KEY);
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed)) setCart(parsed);
+        if (Array.isArray(parsed)) {
+          // Migrate pre-options cart entries
+          const migrated: CartItem[] = parsed.map((c: Partial<CartItem> & { itemId: string; quantity: number }) => ({
+            lineId: c.lineId ?? newLineId(),
+            itemId: c.itemId,
+            quantity: c.quantity,
+            optionsSelected: c.optionsSelected,
+            priceModifier: c.priceModifier ?? 0,
+          }));
+          setCart(migrated);
+        }
       }
     } catch { /* ignore */ }
   }, []);
@@ -146,22 +167,53 @@ export default function PedidoContent({ categories, items }: Props) {
     } catch { /* ignore */ }
   }, [cart]);
 
-  const addToCart = (itemId: string) => {
+  const addToCart = (item: MenuItemData) => {
+    if (hasOptions(item)) {
+      setOptionsModalItem(item);
+      return;
+    }
     setCart((prev) => {
-      const existing = prev.find((c) => c.itemId === itemId);
+      const existing = prev.find(
+        (c) => c.itemId === item.id && !c.optionsSelected?.length
+      );
       if (existing) {
-        return prev.map((c) => c.itemId === itemId ? { ...c, quantity: c.quantity + 1 } : c);
+        return prev.map((c) =>
+          c.lineId === existing.lineId ? { ...c, quantity: c.quantity + 1 } : c
+        );
       }
-      return [...prev, { itemId, quantity: 1 }];
+      return [
+        ...prev,
+        { lineId: newLineId(), itemId: item.id, quantity: 1, priceModifier: 0 },
+      ];
     });
   };
 
-  const updateQuantity = (itemId: string, delta: number) => {
+  const addToCartWithOptions = (item: MenuItemData, selections: SelectedOption[]) => {
+    const priceMod = selections.reduce((s, o) => s + o.priceModifier, 0);
+    setCart((prev) => [
+      ...prev,
+      {
+        lineId: newLineId(),
+        itemId: item.id,
+        quantity: 1,
+        optionsSelected: selections.length ? selections : undefined,
+        priceModifier: priceMod,
+      },
+    ]);
+    setOptionsModalItem(null);
+  };
+
+  const updateLineQuantity = (lineId: string, delta: number) => {
     setCart((prev) =>
       prev
-        .map((c) => c.itemId === itemId ? { ...c, quantity: c.quantity + delta } : c)
+        .map((c) => (c.lineId === lineId ? { ...c, quantity: c.quantity + delta } : c))
         .filter((c) => c.quantity > 0)
     );
+  };
+
+  const decrementPlainItem = (itemId: string) => {
+    const line = cart.find((c) => c.itemId === itemId && !c.optionsSelected?.length);
+    if (line) updateLineQuantity(line.lineId, -1);
   };
 
   const getItem = useCallback(
@@ -174,7 +226,8 @@ export default function PedidoContent({ categories, items }: Props) {
 
   const cartTotal = cart.reduce((sum, c) => {
     const item = getItem(c);
-    return sum + (item?.price ?? 0) * c.quantity;
+    if (!item) return sum;
+    return sum + (item.price + c.priceModifier) * c.quantity;
   }, 0);
 
   const cartCount = cart.reduce((sum, c) => sum + c.quantity, 0);
@@ -183,7 +236,10 @@ export default function PedidoContent({ categories, items }: Props) {
     `${price.toFixed(2).replace(".", ",")}€`;
 
   const getCartQuantity = (itemId: string) =>
-    cart.find((c) => c.itemId === itemId)?.quantity ?? 0;
+    cart.reduce((s, c) => (c.itemId === itemId ? s + c.quantity : s), 0);
+
+  const getPlainLineQty = (itemId: string) =>
+    cart.find((c) => c.itemId === itemId && !c.optionsSelected?.length)?.quantity ?? 0;
 
   // Scroll active category button into view
   useEffect(() => {
@@ -272,11 +328,13 @@ export default function PedidoContent({ categories, items }: Props) {
     try {
       const orderItems = cart.map((c) => {
         const item = getItem(c);
+        const basePrice = item?.price ?? 0;
         return {
           id: c.itemId,
           quantity: c.quantity,
           name: item ? getName(item) : "",
-          price: item?.price ?? 0,
+          price: basePrice + c.priceModifier,
+          options: c.optionsSelected,
         };
       });
 
@@ -340,9 +398,11 @@ export default function PedidoContent({ categories, items }: Props) {
     const item = getItem(cartItem);
     if (!item) return null;
     const imgSize = compact ? "w-12 h-12" : "w-10 h-10";
+    const unitPrice = item.price + cartItem.priceModifier;
+    const optsText = cartItem.optionsSelected?.map((o) => o.choice).join(" · ") ?? "";
     return (
       <div
-        key={`${prefix}-${cartItem.itemId}`}
+        key={`${prefix}-${cartItem.lineId}`}
         className={`flex items-center gap-3 ${compact ? "bg-white border border-beige p-3" : ""}`}
       >
         {item.imageUrl && (
@@ -352,23 +412,26 @@ export default function PedidoContent({ categories, items }: Props) {
         )}
         <div className="flex-1 min-w-0">
           <div className="text-[14px] text-maroon font-light truncate">{getName(item)}</div>
+          {optsText && (
+            <div className="font-body text-[11px] text-gray truncate">{optsText}</div>
+          )}
           <div className={`font-body text-[12px] ${compact ? "text-camel" : "text-gray"}`}>
-            {compact ? formatPrice(item.price) : `${formatPrice(item.price)} × ${cartItem.quantity}`}
+            {compact ? formatPrice(unitPrice) : `${formatPrice(unitPrice)} × ${cartItem.quantity}`}
           </div>
         </div>
         <div className="flex items-center gap-2">
           <button
-            onClick={() => updateQuantity(cartItem.itemId, -1)}
+            onClick={() => updateLineQuantity(cartItem.lineId, -1)}
             className="w-7 h-7 border border-beige text-maroon font-body text-xs flex items-center justify-center cursor-pointer hover:border-maroon bg-transparent"
           >−</button>
           <span className="font-body text-[13px] text-maroon w-4 text-center">{cartItem.quantity}</span>
           <button
-            onClick={() => updateQuantity(cartItem.itemId, 1)}
+            onClick={() => updateLineQuantity(cartItem.lineId, 1)}
             className="w-7 h-7 border border-beige text-maroon font-body text-xs flex items-center justify-center cursor-pointer hover:border-maroon bg-transparent"
           >+</button>
         </div>
         <div className="text-[14px] text-maroon font-light w-16 text-right">
-          {formatPrice(item.price * cartItem.quantity)}
+          {formatPrice(unitPrice * cartItem.quantity)}
         </div>
       </div>
     );
@@ -474,7 +537,9 @@ export default function PedidoContent({ categories, items }: Props) {
 
                     <div className="grid grid-cols-2 gap-3 sm:gap-5 md:grid-cols-3 xl:grid-cols-4">
                       {catItems.map((item) => {
-                        const qty = getCartQuantity(item.id);
+                        const plainQty = getPlainLineQty(item.id);
+                        const totalQty = getCartQuantity(item.id);
+                        const itemHasOptions = hasOptions(item);
                         const itemName = getName(item);
                         const itemDesc = getDesc(item);
                         return (
@@ -511,22 +576,38 @@ export default function PedidoContent({ categories, items }: Props) {
                               <div className="mt-auto pt-3">
                                 <span className="text-[24px] sm:text-[16px] font-light text-camel block mb-2.5 sm:mb-3">
                                   {formatPrice(item.price)}
+                                  {itemHasOptions && (
+                                    <span className="text-[12px] sm:text-[10px] text-gray ml-1">+</span>
+                                  )}
                                 </span>
-                                {qty > 0 ? (
+                                {itemHasOptions ? (
+                                  <button
+                                    onClick={() => addToCart(item)}
+                                    className="w-full h-10 sm:h-9 bg-maroon text-white font-body text-[12px] sm:text-[11px] tracking-[2px] uppercase border-none cursor-pointer transition-all duration-300 hover:bg-maroon-dark active:scale-[0.97] flex items-center justify-center gap-2"
+                                  >
+                                    <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                                      <path d="M8 3v10M3 8h10" />
+                                    </svg>
+                                    {t("add")}
+                                    {totalQty > 0 && (
+                                      <span className="ml-1 px-1.5 py-0.5 bg-white/20 text-[10px]">×{totalQty}</span>
+                                    )}
+                                  </button>
+                                ) : plainQty > 0 ? (
                                   <div className="flex items-center justify-between border border-beige">
                                     <button
-                                      onClick={() => updateQuantity(item.id, -1)}
+                                      onClick={() => decrementPlainItem(item.id)}
                                       className="w-10 h-10 sm:w-8 sm:h-8 text-maroon font-body text-base sm:text-sm flex items-center justify-center cursor-pointer transition-colors hover:bg-beige/50 bg-transparent border-none"
                                     >−</button>
-                                    <span className="font-body text-[15px] sm:text-[14px] text-maroon font-medium">{qty}</span>
+                                    <span className="font-body text-[15px] sm:text-[14px] text-maroon font-medium">{plainQty}</span>
                                     <button
-                                      onClick={() => updateQuantity(item.id, 1)}
+                                      onClick={() => addToCart(item)}
                                       className="w-10 h-10 sm:w-8 sm:h-8 text-maroon font-body text-base sm:text-sm flex items-center justify-center cursor-pointer transition-colors hover:bg-beige/50 bg-transparent border-none"
                                     >+</button>
                                   </div>
                                 ) : (
                                   <button
-                                    onClick={() => addToCart(item.id)}
+                                    onClick={() => addToCart(item)}
                                     className="w-full h-10 sm:h-9 bg-maroon text-white font-body text-[12px] sm:text-[11px] tracking-[2px] uppercase border-none cursor-pointer transition-all duration-300 hover:bg-maroon-dark active:scale-[0.97] flex items-center justify-center gap-2"
                                   >
                                     <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
@@ -987,6 +1068,14 @@ export default function PedidoContent({ categories, items }: Props) {
       </AnimatePresence>
 
       {cartCount > 0 && <div className="lg:hidden h-[68px]" />}
+
+      {optionsModalItem && (
+        <MenuItemOptionsModal
+          item={optionsModalItem}
+          onClose={() => setOptionsModalItem(null)}
+          onConfirm={(selections) => addToCartWithOptions(optionsModalItem, selections)}
+        />
+      )}
     </>
   );
 }
