@@ -1,9 +1,29 @@
 import { NextRequest, NextResponse } from "next/server";
-import { stripe } from "@/lib/stripe";
+import { fulfillWebOrder, type OrderItem } from "@/lib/order-fulfillment";
+
+type Incoming = {
+  name: string;
+  phone: string;
+  email: string;
+  pickup_time: string;
+  notes?: string | null;
+  items: OrderItem[];
+  total: number;
+  discount_code?: string | null;
+  discount_amount?: number;
+  locale?: string;
+};
+
+const newOrderId = () => {
+  const d = new Date();
+  const date = `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, "0")}${String(d.getDate()).padStart(2, "0")}`;
+  const rand = Math.random().toString(36).slice(2, 6).toUpperCase();
+  return `M${date}-${rand}`;
+};
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
+    const body = (await request.json()) as Incoming;
     const {
       name,
       phone,
@@ -14,9 +34,6 @@ export async function POST(request: NextRequest) {
       total,
       discount_code,
       discount_amount = 0,
-      order_type,
-      delivery_address,
-      delivery_fee = 0,
       locale = "es",
     } = body;
 
@@ -26,7 +43,8 @@ export async function POST(request: NextRequest) {
       !email ||
       !items ||
       !Array.isArray(items) ||
-      items.length === 0
+      items.length === 0 ||
+      !pickup_time
     ) {
       return NextResponse.json(
         { error: "Missing required fields" },
@@ -34,90 +52,36 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (!pickup_time) {
-      return NextResponse.json(
-        { error: "Pickup time is required" },
-        { status: 400 }
-      );
-    }
+    const origin = request.headers.get("origin")
+      || request.headers.get("referer")?.replace(/\/[^/]*$/, "")
+      || process.env.NEXT_PUBLIC_SITE_URL
+      || "https://sushimaydo.com";
 
-    if (order_type === "delivery" && !delivery_address) {
-      return NextResponse.json(
-        { error: "Delivery address is required" },
-        { status: 400 }
-      );
-    }
+    const orderId = newOrderId();
 
-    // Build line items for Stripe
-    const lineItems = items.map(
-      (item: { name: string; price: number; quantity: number }) => ({
-        price_data: {
-          currency: "eur",
-          product_data: { name: item.name },
-          unit_amount: Math.round(item.price * 100),
-        },
-        quantity: item.quantity,
-      })
-    );
-
-    // Add delivery fee as a line item
-    if (order_type === "delivery" && delivery_fee > 0) {
-      lineItems.push({
-        price_data: {
-          currency: "eur",
-          product_data: { name: "Envío / Delivery" },
-          unit_amount: Math.round(delivery_fee * 100),
-        },
-        quantity: 1,
-      });
-    }
-
-    // Build discount coupon in Stripe if applicable
-    const discounts: { coupon: string }[] = [];
-    if (discount_code && discount_amount > 0) {
-      const stripeCoupon = await stripe.coupons.create({
-        amount_off: Math.round(discount_amount * 100),
-        currency: "eur",
-        duration: "once",
-        name: `Descuento ${discount_code}`,
-      });
-      discounts.push({ coupon: stripeCoupon.id });
-    }
-
-    const origin = request.headers.get("origin") || "";
-
-    const session = await stripe.checkout.sessions.create({
-      mode: "payment",
-      payment_method_types: ["card"],
-      customer_email: email,
-      line_items: lineItems,
-      discounts,
-      metadata: {
-        name,
-        phone,
-        email,
-        pickup_time,
-        notes: notes || "",
-        order_type: order_type || "pickup",
-        delivery_address: delivery_address || "",
-        delivery_fee: String(delivery_fee),
-        discount_code: discount_code || "",
-        discount_amount: String(discount_amount),
-        total: String(total),
-        items_ref: items.map(
-          (i: { id: string; quantity: number; price: number }) =>
-            `${i.id}:${i.quantity}:${i.price}`
-        ).join(","),
-      },
-      success_url: `${origin}/${locale}/pedido/success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${origin}/${locale}/pedido`,
+    const result = await fulfillWebOrder({
+      orderId,
+      name,
+      phone,
+      email,
+      pickupTime: pickup_time,
+      notes: notes ?? null,
+      items,
+      total,
+      discountCode: discount_code ?? null,
+      discountAmount: discount_amount,
+      locale,
+      origin,
     });
 
-    return NextResponse.json({ url: session.url });
+    return NextResponse.json({
+      orderId,
+      orderlixOrderId: result.orderlixOrderId,
+    });
   } catch (err) {
     console.error("Checkout error:", err);
     return NextResponse.json(
-      { error: "Failed to create checkout session" },
+      { error: "Failed to place order" },
       { status: 500 }
     );
   }

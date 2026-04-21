@@ -124,7 +124,7 @@
   "Pedido": {
     "sub": "在线点餐",
     "title": "开始点餐",
-    "heroDesc": "选择您喜爱的菜品，到店自取或外卖配送。",
+    "heroDesc": "选择您喜爱的菜品，到店自取。取餐时在店内付款。",
     "deliveryAlsoSub": "也可在以下平台下单",
     "deliveryAlsoTitle": "在您喜爱的外卖平台下单",
     "deliveryAlsoDesc": "您也可以通过外卖平台下单，几步即可完成。",
@@ -175,6 +175,7 @@
     "asap": "尽快送达",
     "noSlotsAvailable": "今天已无可选时段，请明天再试。",
     "deliveryTooFar": "抱歉，该地址超出配送范围（2 公里）。",
+    "payAtStore": "取餐时在店内付款。",
     "payNow": "立即支付",
     "redirecting": "跳转中...",
     "paymentSecure": "通过 Stripe 安全支付，支持 Visa、Mastercard 等。",

@@ -124,7 +124,7 @@
   "Pedido": {
     "sub": "Pedido online",
     "title": "Haga su pedido",
-    "heroDesc": "Seleccione sus platos favoritos para recoger en restaurante o recibir a domicilio.",
+    "heroDesc": "Seleccione sus platos favoritos y recójalos en el restaurante. Pago en tienda al recoger.",
     "deliveryAlsoSub": "También disponible en",
     "deliveryAlsoTitle": "Pídelo en tu app de delivery favorita",
     "deliveryAlsoDesc": "También nos encuentras en tus apps de delivery — pedido en pocos clics.",
@@ -175,6 +175,7 @@
     "asap": "Lo antes posible",
     "noSlotsAvailable": "No hay horarios disponibles por hoy. Vuelva a intentarlo mañana.",
     "deliveryTooFar": "Lo sentimos, esta dirección está fuera de nuestra zona de entrega (2 km).",
+    "payAtStore": "Pago en tienda al recoger el pedido.",
     "payNow": "Pagar ahora",
     "redirecting": "Redirigiendo...",
     "paymentSecure": "Pago seguro con Stripe. Aceptamos Visa, Mastercard y más.",

@@ -124,7 +124,7 @@
   "Pedido": {
     "sub": "Comanda en línia",
     "title": "Feu la vostra comanda",
-    "heroDesc": "Seleccioneu els vostres plats preferits per recollir al restaurant o rebre a domicili.",
+    "heroDesc": "Seleccioneu els vostres plats preferits i recolliu-los al restaurant. Pagament en botiga en recollir.",
     "deliveryAlsoSub": "També disponible a",
     "deliveryAlsoTitle": "Demana-ho a la teva app de delivery preferida",
     "deliveryAlsoDesc": "També ens trobes a les teves apps de delivery — comanda en pocs clics.",
@@ -175,6 +175,7 @@
     "asap": "El més aviat possible",
     "noSlotsAvailable": "No hi ha horaris disponibles per avui. Torneu a provar-ho demà.",
     "deliveryTooFar": "Ho sentim, aquesta adreça és fora de la nostra zona de lliurament (2 km).",
+    "payAtStore": "Pagament al restaurant en recollir la comanda.",
     "payNow": "Pagar ara",
     "redirecting": "Redirigint...",
     "paymentSecure": "Pagament segur amb Stripe. Acceptem Visa, Mastercard i més.",

@@ -124,7 +124,7 @@
   "Pedido": {
     "sub": "Online order",
     "title": "Place your order",
-    "heroDesc": "Select your favourite dishes for pickup or home delivery.",
+    "heroDesc": "Select your favourite dishes for pickup at the restaurant. Pay when you pick up.",
     "deliveryAlsoSub": "Also available on",
     "deliveryAlsoTitle": "Order from your favourite delivery app",
     "deliveryAlsoDesc": "Also available on your delivery apps — order in just a few clicks.",
@@ -175,6 +175,7 @@
     "asap": "ASAP",
     "noSlotsAvailable": "No time slots available for today. Please try again tomorrow.",
     "deliveryTooFar": "Sorry, this address is outside our delivery area (2 km).",
+    "payAtStore": "Payment is made at the restaurant when you pick up.",
     "payNow": "Pay now",
     "redirecting": "Redirecting...",
     "paymentSecure": "Secure payment via Stripe. We accept Visa, Mastercard and more.",
