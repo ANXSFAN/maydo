@@ -10,12 +10,22 @@ const TWILIO_AUTH_TOKEN = process.env.TWILIO_AUTH_TOKEN;
 const TWILIO_FROM_NUMBER = process.env.TWILIO_FROM_NUMBER;
 const RESTAURANT_SMS_TO = process.env.RESTAURANT_SMS_TO;
 
+export type OrderItemSetMealSelection = {
+  courseNumber: number;
+  name: string;
+  priceDelta: number;
+};
+
 export type OrderItem = {
   id: string;
   name: string;
   quantity: number;
   price: number;
   options?: { choice: string; priceModifier: number }[];
+  /** 套餐行标识 */
+  isSetMeal?: boolean;
+  /** 套餐的课程选择（仅套餐行） */
+  selections?: OrderItemSetMealSelection[];
 };
 
 export type WebOrder = {
@@ -109,17 +119,39 @@ async function pushToOrderlix(order: WebOrder): Promise<string | undefined> {
 
 const fmt = (n: number) => n.toFixed(2).replace(".", ",") + "€";
 
+function renderItemDetailHtml(i: OrderItem): string {
+  if (i.isSetMeal && i.selections?.length) {
+    const lines = i.selections
+      .map((s) => {
+        const extra = s.priceDelta > 0 ? ` (+${fmt(s.priceDelta)})` : "";
+        return `&nbsp;&nbsp;· ${escapeHtml(s.name)}${extra}`;
+      })
+      .join("<br/>");
+    return `<div style="font-size:11px;color:#999;margin-top:3px;line-height:1.5;">${lines}</div>`;
+  }
+  if (i.options?.length) {
+    return `<div style="font-size:11px;color:#999;">${escapeHtml(i.options.map((o) => o.choice).join(" · "))}</div>`;
+  }
+  return "";
+}
+
+function escapeHtml(s: string): string {
+  return s
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
 async function notifyRestaurantEmail(order: WebOrder) {
   if (!process.env.RESEND_API_KEY) return;
 
   const itemsHtml = order.items
     .map((i) => {
-      const opts = i.options?.length
-        ? `<div style="font-size:11px;color:#999;">${i.options.map((o) => o.choice).join(" · ")}</div>`
-        : "";
+      const prefix = i.isSetMeal ? "📋 " : "";
       return `
         <tr>
-          <td style="padding:6px 0;">${i.name} × ${i.quantity}${opts}</td>
+          <td style="padding:6px 0;">${prefix}${escapeHtml(i.name)} × ${i.quantity}${renderItemDetailHtml(i)}</td>
           <td style="padding:6px 0; text-align:right;">${fmt(i.price * i.quantity)}</td>
         </tr>`;
     })
@@ -192,12 +224,9 @@ async function notifyCustomerEmail(order: WebOrder) {
 
   const itemsHtml = order.items
     .map((i) => {
-      const opts = i.options?.length
-        ? `<div style="font-size:11px;color:#999;">${i.options.map((o) => o.choice).join(" · ")}</div>`
-        : "";
       return `
         <tr>
-          <td style="padding:6px 0;">${i.name} × ${i.quantity}${opts}</td>
+          <td style="padding:6px 0;">${escapeHtml(i.name)} × ${i.quantity}${renderItemDetailHtml(i)}</td>
           <td style="padding:6px 0; text-align:right;">${fmt(i.price * i.quantity)}</td>
         </tr>`;
     })

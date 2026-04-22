@@ -7,25 +7,41 @@ import { useRouter } from "@/i18n/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import FadeIn from "@/components/ui/FadeIn";
 import DiamondDivider from "@/components/ui/DiamondDivider";
-import type { MenuCategoryData, MenuItemData } from "@/lib/menu-types";
-import { getLocalizedText } from "@/lib/menu-types";
+import type { MenuCategoryData, MenuItemData, SetMealData } from "@/lib/menu-types";
+import { getLocalizedText, isSetMealAvailableAt } from "@/lib/menu-types";
 import AllergenBadges from "@/components/ui/AllergenBadges";
 import MenuItemOptionsModal, { type SelectedOption } from "@/components/pedido/MenuItemOptionsModal";
+import SetMealSelector, { type SetMealResult, type SetMealSelection } from "@/components/pedido/SetMealSelector";
 
 type Props = {
   categories: MenuCategoryData[];
   items: MenuItemData[];
+  setMeals: SetMealData[];
 };
 
-type Section = "all" | "sushi" | "cocina";
+type Section = "all" | "sushi" | "cocina" | "menu";
 
-type CartItem = {
+type RegularCartItem = {
+  kind: "item";
   lineId: string;
   itemId: string;
   quantity: number;
   optionsSelected?: SelectedOption[];
   priceModifier: number;
 };
+
+type SetMealCartItem = {
+  kind: "setMeal";
+  lineId: string;
+  setMealId: string;
+  setMealName: Record<string, string>;
+  /** 最终单价 = 套餐基础价 + Σ priceDelta */
+  unitPrice: number;
+  selections: SetMealSelection[];
+  quantity: number;
+};
+
+type CartItem = RegularCartItem | SetMealCartItem;
 
 const newLineId = () =>
   Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
@@ -46,7 +62,7 @@ const PICKUP_SLOTS = [
 
 const CART_STORAGE_KEY = "sushi-maydo-cart";
 
-export default function PedidoContent({ categories, items }: Props) {
+export default function PedidoContent({ categories, items, setMeals }: Props) {
   const t = useTranslations("Pedido");
   const locale = useLocale();
   const router = useRouter();
@@ -56,6 +72,7 @@ export default function PedidoContent({ categories, items }: Props) {
   const [showCheckout, setShowCheckout] = useState(false);
   const [showMobileCart, setShowMobileCart] = useState(false);
   const [optionsModalItem, setOptionsModalItem] = useState<MenuItemData | null>(null);
+  const [selectedSetMeal, setSelectedSetMeal] = useState<SetMealData | null>(null);
   const catNavRef = useRef<HTMLDivElement>(null);
 
   // Checkout form state
@@ -93,6 +110,7 @@ export default function PedidoContent({ categories, items }: Props) {
   );
 
   const visibleCategories = useMemo(() => {
+    if (activeSection === "menu") return [];
     if (activeSection === "all") return categoriesWithItems;
     if (activeSection === "sushi")
       return categoriesWithItems.filter((c) => sushiCatIds.has(c.category.id));
@@ -120,6 +138,20 @@ export default function PedidoContent({ categories, items }: Props) {
     });
   }, [nowMinutes]);
 
+  // 套餐按 available_from/to 过滤当前可点的
+  const availableSetMeals = useMemo(() => {
+    const now = new Date();
+    return setMeals.filter((sm) => isSetMealAvailableAt(sm, now));
+    // nowMinutes 每分钟变化，顺带刷新一次
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [setMeals, nowMinutes]);
+
+  const availableSections: Section[] = useMemo(() => {
+    const base: Section[] = ["all", "sushi", "cocina"];
+    if (availableSetMeals.length > 0) base.push("menu");
+    return base;
+  }, [availableSetMeals.length]);
+
   // ---- Cart helpers ----
   useEffect(() => {
     try {
@@ -127,14 +159,31 @@ export default function PedidoContent({ categories, items }: Props) {
       if (saved) {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed)) {
-          // Migrate pre-options cart entries
-          const migrated: CartItem[] = parsed.map((c: Partial<CartItem> & { itemId: string; quantity: number }) => ({
-            lineId: c.lineId ?? newLineId(),
-            itemId: c.itemId,
-            quantity: c.quantity,
-            optionsSelected: c.optionsSelected,
-            priceModifier: c.priceModifier ?? 0,
-          }));
+          const migrated: CartItem[] = parsed
+            .map((c: Record<string, unknown>): CartItem | null => {
+              if (c.kind === "setMeal" && typeof c.setMealId === "string") {
+                return {
+                  kind: "setMeal",
+                  lineId: (c.lineId as string) ?? newLineId(),
+                  setMealId: c.setMealId,
+                  setMealName: (c.setMealName as Record<string, string>) ?? {},
+                  unitPrice: Number(c.unitPrice ?? 0),
+                  selections: (c.selections as SetMealSelection[]) ?? [],
+                  quantity: Number(c.quantity ?? 1),
+                };
+              }
+              // 老版本没有 kind 字段，按普通菜品处理
+              if (typeof c.itemId !== "string") return null;
+              return {
+                kind: "item",
+                lineId: (c.lineId as string) ?? newLineId(),
+                itemId: c.itemId,
+                quantity: Number(c.quantity ?? 1),
+                optionsSelected: c.optionsSelected as SelectedOption[] | undefined,
+                priceModifier: Number(c.priceModifier ?? 0),
+              };
+            })
+            .filter((c): c is CartItem => c !== null);
           setCart(migrated);
         }
       }
@@ -154,7 +203,8 @@ export default function PedidoContent({ categories, items }: Props) {
     }
     setCart((prev) => {
       const existing = prev.find(
-        (c) => c.itemId === item.id && !c.optionsSelected?.length
+        (c): c is RegularCartItem =>
+          c.kind === "item" && c.itemId === item.id && !c.optionsSelected?.length
       );
       if (existing) {
         return prev.map((c) =>
@@ -163,7 +213,7 @@ export default function PedidoContent({ categories, items }: Props) {
       }
       return [
         ...prev,
-        { lineId: newLineId(), itemId: item.id, quantity: 1, priceModifier: 0 },
+        { kind: "item", lineId: newLineId(), itemId: item.id, quantity: 1, priceModifier: 0 },
       ];
     });
   };
@@ -173,6 +223,7 @@ export default function PedidoContent({ categories, items }: Props) {
     setCart((prev) => [
       ...prev,
       {
+        kind: "item",
         lineId: newLineId(),
         itemId: item.id,
         quantity: 1,
@@ -181,6 +232,22 @@ export default function PedidoContent({ categories, items }: Props) {
       },
     ]);
     setOptionsModalItem(null);
+  };
+
+  const addSetMealToCart = (result: SetMealResult) => {
+    setCart((prev) => [
+      ...prev,
+      {
+        kind: "setMeal",
+        lineId: newLineId(),
+        setMealId: result.setMealId,
+        setMealName: result.setMealName,
+        unitPrice: result.unitPrice,
+        selections: result.selections,
+        quantity: 1,
+      },
+    ]);
+    setSelectedSetMeal(null);
   };
 
   const updateLineQuantity = (lineId: string, delta: number) => {
@@ -192,12 +259,15 @@ export default function PedidoContent({ categories, items }: Props) {
   };
 
   const decrementPlainItem = (itemId: string) => {
-    const line = cart.find((c) => c.itemId === itemId && !c.optionsSelected?.length);
+    const line = cart.find(
+      (c): c is RegularCartItem =>
+        c.kind === "item" && c.itemId === itemId && !c.optionsSelected?.length
+    );
     if (line) updateLineQuantity(line.lineId, -1);
   };
 
   const getItem = useCallback(
-    (cartItem: CartItem): MenuItemData | null => itemMap[cartItem.itemId] ?? null,
+    (cartItem: RegularCartItem): MenuItemData | null => itemMap[cartItem.itemId] ?? null,
     [itemMap]
   );
 
@@ -205,7 +275,8 @@ export default function PedidoContent({ categories, items }: Props) {
   const getDesc = (item: MenuItemData) => getLocalizedText(item.description, locale);
 
   const cartTotal = cart.reduce((sum, c) => {
-    const item = getItem(c);
+    if (c.kind === "setMeal") return sum + c.unitPrice * c.quantity;
+    const item = itemMap[c.itemId];
     if (!item) return sum;
     return sum + (item.price + c.priceModifier) * c.quantity;
   }, 0);
@@ -216,10 +287,16 @@ export default function PedidoContent({ categories, items }: Props) {
     `${price.toFixed(2).replace(".", ",")}€`;
 
   const getCartQuantity = (itemId: string) =>
-    cart.reduce((s, c) => (c.itemId === itemId ? s + c.quantity : s), 0);
+    cart.reduce(
+      (s, c) => (c.kind === "item" && c.itemId === itemId ? s + c.quantity : s),
+      0
+    );
 
   const getPlainLineQty = (itemId: string) =>
-    cart.find((c) => c.itemId === itemId && !c.optionsSelected?.length)?.quantity ?? 0;
+    cart.find(
+      (c): c is RegularCartItem =>
+        c.kind === "item" && c.itemId === itemId && !c.optionsSelected?.length
+    )?.quantity ?? 0;
 
   // Scroll active category button into view
   useEffect(() => {
@@ -297,7 +374,21 @@ export default function PedidoContent({ categories, items }: Props) {
 
     try {
       const orderItems = cart.map((c) => {
-        const item = getItem(c);
+        if (c.kind === "setMeal") {
+          return {
+            id: c.setMealId,
+            isSetMeal: true as const,
+            name: getLocalizedText(c.setMealName, locale),
+            quantity: c.quantity,
+            price: c.unitPrice,
+            selections: c.selections.map((sl) => ({
+              courseNumber: sl.courseNumber,
+              name: getLocalizedText(sl.name, locale),
+              priceDelta: sl.priceDelta,
+            })),
+          };
+        }
+        const item = itemMap[c.itemId];
         const basePrice = item?.price ?? 0;
         return {
           id: c.itemId,
@@ -358,6 +449,55 @@ export default function PedidoContent({ categories, items }: Props) {
 
   // ---- Shared cart item renderer ----
   const renderCartItem = (cartItem: CartItem, prefix: string, compact?: boolean) => {
+    // 套餐行：显示套餐名 + 子菜品缩略
+    if (cartItem.kind === "setMeal") {
+      const subText = cartItem.selections
+        .map((sl) => getLocalizedText(sl.name, locale))
+        .join(" · ");
+      return (
+        <div
+          key={`${prefix}-${cartItem.lineId}`}
+          className={`${compact ? "bg-white border border-beige p-3" : ""}`}
+        >
+          <div className="flex items-start gap-3">
+            <div className={`${compact ? "w-12 h-12" : "w-10 h-10"} shrink-0 bg-maroon/10 border border-maroon/20 flex items-center justify-center`}>
+              <span className="font-cjk text-maroon/80 text-lg">膳</span>
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="text-[14px] text-maroon font-light truncate">
+                {getLocalizedText(cartItem.setMealName, locale)}
+              </div>
+              {subText && (
+                <div className="font-body text-[11px] text-gray mt-0.5 line-clamp-2 leading-snug">
+                  {subText}
+                </div>
+              )}
+              <div className={`font-body text-[12px] mt-0.5 ${compact ? "text-camel" : "text-gray"}`}>
+                {compact
+                  ? formatPrice(cartItem.unitPrice)
+                  : `${formatPrice(cartItem.unitPrice)} × ${cartItem.quantity}`}
+              </div>
+            </div>
+            <div className="flex items-center gap-2 shrink-0">
+              <button
+                onClick={() => updateLineQuantity(cartItem.lineId, -1)}
+                className="w-7 h-7 border border-beige text-maroon font-body text-xs flex items-center justify-center cursor-pointer hover:border-maroon bg-transparent"
+              >−</button>
+              <span className="font-body text-[13px] text-maroon w-4 text-center">{cartItem.quantity}</span>
+              <button
+                onClick={() => updateLineQuantity(cartItem.lineId, 1)}
+                className="w-7 h-7 border border-beige text-maroon font-body text-xs flex items-center justify-center cursor-pointer hover:border-maroon bg-transparent"
+              >+</button>
+            </div>
+            <div className="text-[14px] text-maroon font-light w-16 text-right shrink-0">
+              {formatPrice(cartItem.unitPrice * cartItem.quantity)}
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // 普通菜品行
     const item = getItem(cartItem);
     if (!item) return null;
     const imgSize = compact ? "w-12 h-12" : "w-10 h-10";
@@ -405,7 +545,7 @@ export default function PedidoContent({ categories, items }: Props) {
       {/* Sticky top nav for mobile */}
       <div className="lg:hidden sticky top-[60px] z-40 bg-cream/95 backdrop-blur-md border-b border-beige/50">
         <div className="flex">
-          {(["all", "sushi", "cocina"] as Section[]).map((sec) => (
+          {availableSections.map((sec) => (
             <button
               key={sec}
               onClick={() => { setActiveSection(sec); setActiveCategory(null); }}
@@ -417,27 +557,29 @@ export default function PedidoContent({ categories, items }: Props) {
             </button>
           ))}
         </div>
-        <div ref={catNavRef} className="flex gap-2 px-3 py-2 overflow-x-auto scrollbar-hide border-t border-beige/30">
-          {visibleCategories.map(({ category }) => (
-            <button
-              key={category.id}
-              data-cat={category.id}
-              onClick={() => {
-                setActiveCategory(category.id);
-                setTimeout(() => {
-                  document.getElementById(`cat-${category.id}`)?.scrollIntoView({ behavior: "smooth", block: "start" });
-                }, 50);
-              }}
-              className={`px-3 py-1.5 text-[11px] tracking-[0.5px] font-body font-light border transition-all duration-200 cursor-pointer whitespace-nowrap shrink-0 ${
-                activeCategory === category.id
-                  ? "bg-camel text-white border-camel"
-                  : "bg-white text-gray border-beige active:border-camel"
-              }`}
-            >
-              {getLocalizedText(category.name, locale)}
-            </button>
-          ))}
-        </div>
+        {visibleCategories.length > 0 && (
+          <div ref={catNavRef} className="flex gap-2 px-3 py-2 overflow-x-auto scrollbar-hide border-t border-beige/30">
+            {visibleCategories.map(({ category }) => (
+              <button
+                key={category.id}
+                data-cat={category.id}
+                onClick={() => {
+                  setActiveCategory(category.id);
+                  setTimeout(() => {
+                    document.getElementById(`cat-${category.id}`)?.scrollIntoView({ behavior: "smooth", block: "start" });
+                  }, 50);
+                }}
+                className={`px-3 py-1.5 text-[11px] tracking-[0.5px] font-body font-light border transition-all duration-200 cursor-pointer whitespace-nowrap shrink-0 ${
+                  activeCategory === category.id
+                    ? "bg-camel text-white border-camel"
+                    : "bg-white text-gray border-beige active:border-camel"
+                }`}
+              >
+                {getLocalizedText(category.name, locale)}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
       <section className="py-[clamp(20px,8vw,100px)] px-[clamp(12px,4vw,40px)] bg-cream">
@@ -448,7 +590,7 @@ export default function PedidoContent({ categories, items }: Props) {
               {/* Desktop section tabs */}
               <FadeIn className="hidden lg:block">
                 <div className="flex gap-3 mb-5">
-                  {(["all", "sushi", "cocina"] as Section[]).map((sec) => (
+                  {availableSections.map((sec) => (
                     <button
                       key={sec}
                       onClick={() => { setActiveSection(sec); setActiveCategory(null); }}
@@ -465,24 +607,94 @@ export default function PedidoContent({ categories, items }: Props) {
               </FadeIn>
 
               {/* Desktop category nav */}
-              <div className="hidden lg:flex flex-wrap gap-2 mb-8">
-                {visibleCategories.map(({ category }) => (
-                  <button
-                    key={category.id}
-                    onClick={() => {
-                      setActiveCategory(activeCategory === category.id ? null : category.id);
-                      document.getElementById(`cat-${category.id}`)?.scrollIntoView({ behavior: "smooth", block: "start" });
-                    }}
-                    className={`px-3 py-1.5 text-[11px] tracking-[1px] font-body font-light border transition-all duration-200 cursor-pointer whitespace-nowrap ${
-                      activeCategory === category.id
-                        ? "bg-camel text-white border-camel"
-                        : "bg-white text-gray border-beige hover:border-camel hover:text-camel"
-                    }`}
-                  >
-                    {getLocalizedText(category.name, locale)}
-                  </button>
-                ))}
-              </div>
+              {visibleCategories.length > 0 && (
+                <div className="hidden lg:flex flex-wrap gap-2 mb-8">
+                  {visibleCategories.map(({ category }) => (
+                    <button
+                      key={category.id}
+                      onClick={() => {
+                        setActiveCategory(activeCategory === category.id ? null : category.id);
+                        document.getElementById(`cat-${category.id}`)?.scrollIntoView({ behavior: "smooth", block: "start" });
+                      }}
+                      className={`px-3 py-1.5 text-[11px] tracking-[1px] font-body font-light border transition-all duration-200 cursor-pointer whitespace-nowrap ${
+                        activeCategory === category.id
+                          ? "bg-camel text-white border-camel"
+                          : "bg-white text-gray border-beige hover:border-camel hover:text-camel"
+                      }`}
+                    >
+                      {getLocalizedText(category.name, locale)}
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {/* Set meals (when menu tab active) */}
+              {activeSection === "menu" && (
+                <div className="space-y-4 sm:space-y-5">
+                  {availableSetMeals.map((sm) => {
+                    const smName = getLocalizedText(sm.name, locale);
+                    return (
+                      <div
+                        key={sm.id}
+                        className="bg-white border border-beige p-5 sm:p-6 transition-all duration-300 hover:shadow-[0_8px_30px_rgba(122,66,66,0.1)]"
+                      >
+                        <div className="flex items-start justify-between gap-4 mb-3">
+                          <div className="min-w-0">
+                            <p className="font-body text-[10px] tracking-[2px] uppercase text-camel mb-1">
+                              {t("setMealTagline")}
+                            </p>
+                            <h4 className="text-[20px] sm:text-[22px] text-maroon font-light">
+                              {smName}
+                            </h4>
+                          </div>
+                          <span className="text-[22px] sm:text-[26px] text-camel font-light shrink-0">
+                            {formatPrice(sm.price)}
+                          </span>
+                        </div>
+
+                        <div className="flex flex-wrap gap-x-4 gap-y-1 font-body text-[12px] text-gray mb-4">
+                          <span>
+                            {t("setMealCoursesCount", { count: sm.courses.length })}
+                          </span>
+                          {sm.availableFrom && sm.availableTo && (
+                            <span>
+                              {sm.availableFrom} - {sm.availableTo}
+                            </span>
+                          )}
+                        </div>
+
+                        {sm.courses.length > 0 && (
+                          <ol className="mb-4 space-y-1">
+                            {sm.courses.map((course) => (
+                              <li
+                                key={course.courseNumber}
+                                className="font-body text-[13px] text-ink/80 flex items-baseline gap-2"
+                              >
+                                <span className="text-camel font-mono text-[11px]">
+                                  {String(course.courseNumber).padStart(2, "0")}
+                                </span>
+                                <span>{getLocalizedText(course.label, locale)}</span>
+                                {course.maxChoices > 1 && (
+                                  <span className="font-body text-[11px] text-gray">
+                                    ({t("chooseUpTo", { count: course.maxChoices })})
+                                  </span>
+                                )}
+                              </li>
+                            ))}
+                          </ol>
+                        )}
+
+                        <button
+                          onClick={() => setSelectedSetMeal(sm)}
+                          className="w-full sm:w-auto h-11 px-6 bg-maroon text-white font-body text-[12px] tracking-[2px] uppercase border-none cursor-pointer transition-all duration-300 hover:bg-maroon-dark active:scale-[0.98]"
+                        >
+                          {t("setMealChoose")}
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
 
               {/* Category sections */}
               <div className="space-y-8 sm:space-y-10">
@@ -774,18 +986,40 @@ export default function PedidoContent({ categories, items }: Props) {
 
                     <div className="my-5 sm:my-6 p-3 sm:p-4 bg-white border border-beige">
                       {cart.map((cartItem) => {
+                        if (cartItem.kind === "setMeal") {
+                          return (
+                            <div key={`co-${cartItem.lineId}`} className="py-1.5">
+                              <div className="flex justify-between font-body text-[13px] text-gray font-light">
+                                <span className="truncate mr-2">
+                                  {getLocalizedText(cartItem.setMealName, locale)} × {cartItem.quantity}
+                                </span>
+                                <span className="text-maroon shrink-0">
+                                  {formatPrice(cartItem.unitPrice * cartItem.quantity)}
+                                </span>
+                              </div>
+                              {cartItem.selections.length > 0 && (
+                                <div className="pl-3 mt-0.5 font-body text-[11px] text-gray/70 font-light leading-snug">
+                                  {cartItem.selections
+                                    .map((sl) => getLocalizedText(sl.name, locale))
+                                    .join(" · ")}
+                                </div>
+                              )}
+                            </div>
+                          );
+                        }
                         const item = getItem(cartItem);
                         if (!item) return null;
+                        const unit = item.price + cartItem.priceModifier;
                         return (
                           <div
-                            key={`co-${cartItem.itemId}`}
+                            key={`co-${cartItem.lineId}`}
                             className="flex justify-between py-1.5 font-body text-[13px] text-gray font-light"
                           >
                             <span className="truncate mr-2">
                               {getName(item)} × {cartItem.quantity}
                             </span>
                             <span className="text-maroon shrink-0">
-                              {formatPrice(item.price * cartItem.quantity)}
+                              {formatPrice(unit * cartItem.quantity)}
                             </span>
                           </div>
                         );
@@ -934,6 +1168,15 @@ export default function PedidoContent({ categories, items }: Props) {
           item={optionsModalItem}
           onClose={() => setOptionsModalItem(null)}
           onConfirm={(selections) => addToCartWithOptions(optionsModalItem, selections)}
+        />
+      )}
+
+      {selectedSetMeal && (
+        <SetMealSelector
+          setMeal={selectedSetMeal}
+          items={items}
+          onClose={() => setSelectedSetMeal(null)}
+          onConfirm={addSetMealToCart}
         />
       )}
     </>

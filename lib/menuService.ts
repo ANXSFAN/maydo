@@ -1,14 +1,15 @@
 import { orderlix, TENANT_ID } from "./orderlix";
-import type { MenuCategoryData, MenuItemData, MenuData } from "./menu-types";
+import type { MenuCategoryData, MenuItemData, MenuData, SetMealData } from "./menu-types";
+import { normalizeSetMealCourses } from "./menu-types";
 
 // Re-export types for server-side consumers
-export type { MenuCategoryData, MenuItemData, MenuData };
+export type { MenuCategoryData, MenuItemData, MenuData, SetMealData };
 export { getLocalizedText } from "./menu-types";
 
 // ---- Data fetching (server-only) ----
 
 export async function getMenuData(): Promise<MenuData> {
-  const [catResult, itemResult] = await Promise.all([
+  const [catResult, itemResult, setMealResult] = await Promise.all([
     orderlix
       .from("menu_category")
       .select("id, name, image_url, sort_order, station")
@@ -21,10 +22,20 @@ export async function getMenuData(): Promise<MenuData> {
       .eq("tenant_id", TENANT_ID)
       .eq("is_available", true)
       .order("sort_order", { ascending: true }),
+    orderlix
+      .from("set_meal")
+      .select("id, name, price, courses, available_from, available_to, sort_order")
+      .eq("tenant_id", TENANT_ID)
+      .eq("is_active", true)
+      .order("sort_order", { ascending: true }),
   ]);
 
   if (catResult.error) throw catResult.error;
   if (itemResult.error) throw itemResult.error;
+  // set_meal 表可能不存在（旧 tenant）—— 忽略错误，按空处理
+  if (setMealResult.error) {
+    console.warn("[menuService] set_meal query failed, skipping:", setMealResult.error.message);
+  }
 
   const categories: MenuCategoryData[] = (catResult.data ?? []).map(
     (c: Record<string, unknown>) => ({
@@ -49,5 +60,17 @@ export async function getMenuData(): Promise<MenuData> {
     })
   );
 
-  return { categories, items };
+  const setMeals: SetMealData[] = (setMealResult.data ?? []).map(
+    (s: Record<string, unknown>) => ({
+      id: s.id as string,
+      name: s.name as Record<string, string>,
+      price: Number(s.price),
+      courses: normalizeSetMealCourses(s.courses),
+      availableFrom: (s.available_from as string | null) ?? null,
+      availableTo: (s.available_to as string | null) ?? null,
+      sortOrder: (s.sort_order as number) ?? 0,
+    })
+  );
+
+  return { categories, items, setMeals };
 }

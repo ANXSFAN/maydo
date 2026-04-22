@@ -7,7 +7,7 @@ import { getTranslations } from "next-intl/server";
 
 export default async function PedidoPage() {
   const t = await getTranslations("Pedido");
-  const { categories, items } = await getMenuData();
+  const { categories, items, setMeals } = await getMenuData();
 
   return (
     <>
@@ -18,7 +18,7 @@ export default async function PedidoPage() {
         desc={t("heroDesc")}
         kanji="注"
       />
-      <PedidoContent categories={categories} items={items} />
+      <PedidoContent categories={categories} items={items} setMeals={setMeals} />
       <Footer />
     </>
   );
