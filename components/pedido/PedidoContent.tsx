@@ -286,6 +286,24 @@ export default function PedidoContent({ categories, items, setMeals }: Props) {
   const formatPrice = (price: number) =>
     `${price.toFixed(2).replace(".", ",")}€`;
 
+  // 套餐子项按 menuItemId 聚合（同一道菜选多份时显示 "名字 × N"）
+  const formatSetMealSelectionSummary = (selections: SetMealSelection[]) => {
+    const grouped: { id: string; name: string; count: number }[] = [];
+    for (const sl of selections) {
+      const existing = grouped.find((g) => g.id === sl.menuItemId);
+      if (existing) existing.count += 1;
+      else
+        grouped.push({
+          id: sl.menuItemId,
+          name: getLocalizedText(sl.name, locale),
+          count: 1,
+        });
+    }
+    return grouped
+      .map(({ name, count }) => (count > 1 ? `${name} × ${count}` : name))
+      .join(" · ");
+  };
+
   const getCartQuantity = (itemId: string) =>
     cart.reduce(
       (s, c) => (c.kind === "item" && c.itemId === itemId ? s + c.quantity : s),
@@ -451,9 +469,7 @@ export default function PedidoContent({ categories, items, setMeals }: Props) {
   const renderCartItem = (cartItem: CartItem, prefix: string, compact?: boolean) => {
     // 套餐行：显示套餐名 + 子菜品缩略
     if (cartItem.kind === "setMeal") {
-      const subText = cartItem.selections
-        .map((sl) => getLocalizedText(sl.name, locale))
-        .join(" · ");
+      const subText = formatSetMealSelectionSummary(cartItem.selections);
       return (
         <div
           key={`${prefix}-${cartItem.lineId}`}
@@ -999,9 +1015,7 @@ export default function PedidoContent({ categories, items, setMeals }: Props) {
                               </div>
                               {cartItem.selections.length > 0 && (
                                 <div className="pl-3 mt-0.5 font-body text-[11px] text-gray/70 font-light leading-snug">
-                                  {cartItem.selections
-                                    .map((sl) => getLocalizedText(sl.name, locale))
-                                    .join(" · ")}
+                                  {formatSetMealSelectionSummary(cartItem.selections)}
                                 </div>
                               )}
                             </div>

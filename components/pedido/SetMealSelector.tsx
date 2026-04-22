@@ -67,35 +67,38 @@ export default function SetMealSelector({
     return items.filter((it) => cats.has(it.categoryId));
   }, [currentCourse, items]);
 
-  const toggleItem = (menuItemId: string) => {
+  const addItem = (menuItemId: string) => {
     if (!currentCourse) return;
     const courseNum = currentCourse.courseNumber;
     const current = selections[courseNum] || [];
-    if (current.includes(menuItemId)) {
-      setSelections((prev) => ({
-        ...prev,
-        [courseNum]: current.filter((id) => id !== menuItemId),
-      }));
-    } else {
-      if (current.length >= currentCourse.maxChoices) {
-        // 超过上限就替换最后一个
-        const updated = [
-          ...current.slice(0, currentCourse.maxChoices - 1),
-          menuItemId,
-        ];
-        setSelections((prev) => ({ ...prev, [courseNum]: updated }));
-      } else {
-        setSelections((prev) => ({
-          ...prev,
-          [courseNum]: [...current, menuItemId],
-        }));
-      }
-    }
+    if (current.length >= currentCourse.maxChoices) return;
+    setSelections((prev) => ({
+      ...prev,
+      [courseNum]: [...current, menuItemId],
+    }));
+  };
+
+  const removeItem = (menuItemId: string) => {
+    if (!currentCourse) return;
+    const courseNum = currentCourse.courseNumber;
+    const current = selections[courseNum] || [];
+    const idx = current.lastIndexOf(menuItemId);
+    if (idx < 0) return;
+    setSelections((prev) => ({
+      ...prev,
+      [courseNum]: [...current.slice(0, idx), ...current.slice(idx + 1)],
+    }));
   };
 
   const currentSelections = currentCourse
     ? selections[currentCourse.courseNumber] || []
     : [];
+
+  const countOf = (menuItemId: string) =>
+    currentSelections.reduce((s, id) => s + (id === menuItemId ? 1 : 0), 0);
+
+  const atMax =
+    !!currentCourse && currentSelections.length >= currentCourse.maxChoices;
 
   const canGoNext = currentCourse && currentSelections.length > 0;
 
@@ -211,13 +214,18 @@ export default function SetMealSelector({
           {step === "courses" && currentCourse && (
             <>
               <div className="mb-4">
-                <h4 className="text-[15px] text-maroon font-medium">
-                  {t("courseLabel", { n: currentCourse.courseNumber })}
-                  {" · "}
-                  <span className="font-light">
-                    {getLocalizedText(currentCourse.label, locale)}
+                <div className="flex items-baseline justify-between gap-2">
+                  <h4 className="text-[15px] text-maroon font-medium">
+                    {t("courseLabel", { n: currentCourse.courseNumber })}
+                    {" · "}
+                    <span className="font-light">
+                      {getLocalizedText(currentCourse.label, locale)}
+                    </span>
+                  </h4>
+                  <span className="font-mono text-[12px] text-camel shrink-0">
+                    {currentSelections.length}/{currentCourse.maxChoices}
                   </span>
-                </h4>
+                </div>
                 <p className="font-body text-[12px] text-gray mt-1">
                   {currentCourse.maxChoices === 1
                     ? t("chooseOne")
@@ -232,31 +240,22 @@ export default function SetMealSelector({
               ) : (
                 <div className="space-y-2">
                   {courseItems.map((item) => {
-                    const isSelected = currentSelections.includes(item.id);
+                    const count = countOf(item.id);
+                    const isSelected = count > 0;
                     const opt = currentCourse.options?.find(
                       (o) => o.menuItemId === item.id
                     );
                     const priceDelta = opt?.priceDelta ?? 0;
                     const itemName = getLocalizedText(item.name, locale);
                     return (
-                      <button
+                      <div
                         key={item.id}
-                        onClick={() => toggleItem(item.id)}
-                        className={`w-full flex items-center gap-3 px-3 py-2.5 text-left border transition-colors cursor-pointer ${
+                        className={`w-full flex items-center gap-3 px-3 py-2.5 border transition-colors ${
                           isSelected
                             ? "border-camel bg-camel/5"
-                            : "border-beige bg-white hover:border-camel"
+                            : "border-beige bg-white"
                         }`}
                       >
-                        <span
-                          className={`w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 ${
-                            isSelected ? "border-camel" : "border-beige"
-                          }`}
-                        >
-                          {isSelected && (
-                            <span className="w-2 h-2 rounded-full bg-camel" />
-                          )}
-                        </span>
                         {item.imageUrl && (
                           <div className="w-10 h-10 shrink-0 relative overflow-hidden bg-white">
                             <Image
@@ -268,16 +267,49 @@ export default function SetMealSelector({
                             />
                           </div>
                         )}
-                        <span className="flex-1 min-w-0 text-[14px] text-maroon truncate">
-                          {itemName}
-                        </span>
-                        {priceDelta !== 0 && (
-                          <span className="font-body text-[12px] text-camel shrink-0">
-                            {priceDelta > 0 ? "+" : ""}
-                            {formatPrice(priceDelta)}
-                          </span>
+                        <div className="flex-1 min-w-0">
+                          <div className="text-[14px] text-maroon truncate">
+                            {itemName}
+                          </div>
+                          {priceDelta !== 0 && (
+                            <div className="font-body text-[11px] text-camel">
+                              {priceDelta > 0 ? "+" : ""}
+                              {formatPrice(priceDelta)}
+                            </div>
+                          )}
+                        </div>
+                        {isSelected ? (
+                          <div className="flex items-center border border-camel shrink-0">
+                            <button
+                              onClick={() => removeItem(item.id)}
+                              className="w-8 h-8 text-maroon font-body flex items-center justify-center cursor-pointer hover:bg-beige/50 bg-transparent border-none"
+                              aria-label="remove"
+                            >
+                              −
+                            </button>
+                            <span className="font-body text-[13px] text-maroon font-medium w-6 text-center">
+                              {count}
+                            </span>
+                            <button
+                              onClick={() => addItem(item.id)}
+                              disabled={atMax}
+                              className="w-8 h-8 text-maroon font-body flex items-center justify-center cursor-pointer hover:bg-beige/50 bg-transparent border-none disabled:opacity-30 disabled:cursor-not-allowed"
+                              aria-label="add"
+                            >
+                              +
+                            </button>
+                          </div>
+                        ) : (
+                          <button
+                            onClick={() => addItem(item.id)}
+                            disabled={atMax}
+                            className="w-8 h-8 border border-beige text-maroon font-body flex items-center justify-center cursor-pointer hover:border-maroon bg-transparent shrink-0 disabled:opacity-30 disabled:cursor-not-allowed"
+                            aria-label="add"
+                          >
+                            +
+                          </button>
                         )}
-                      </button>
+                      </div>
                     );
                   })}
                 </div>
@@ -302,13 +334,20 @@ export default function SetMealSelector({
                 <div className="space-y-3">
                   {setMeal.courses.map((course) => {
                     const courseSel = selections[course.courseNumber] || [];
+                    // 按 menuItemId 聚合：统计每个菜选了几份
+                    const grouped: { itemId: string; count: number }[] = [];
+                    for (const id of courseSel) {
+                      const existing = grouped.find((g) => g.itemId === id);
+                      if (existing) existing.count += 1;
+                      else grouped.push({ itemId: id, count: 1 });
+                    }
                     return (
                       <div key={course.courseNumber}>
                         <p className="font-body text-[10px] tracking-[1.5px] uppercase text-camel mb-1.5">
                           {getLocalizedText(course.label, locale)}
                         </p>
                         <ul className="space-y-1">
-                          {courseSel.map((itemId) => {
+                          {grouped.map(({ itemId, count }) => {
                             const item = itemMap[itemId];
                             const opt = course.options?.find(
                               (o) => o.menuItemId === itemId
@@ -324,11 +363,14 @@ export default function SetMealSelector({
                                   {item
                                     ? getLocalizedText(item.name, locale)
                                     : itemId}
+                                  {count > 1 && (
+                                    <span className="text-gray">× {count}</span>
+                                  )}
                                 </span>
                                 {pd !== 0 && (
                                   <span className="text-camel">
                                     {pd > 0 ? "+" : ""}
-                                    {formatPrice(pd)}
+                                    {formatPrice(pd * count)}
                                   </span>
                                 )}
                               </li>

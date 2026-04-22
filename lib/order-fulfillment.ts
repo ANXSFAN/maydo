@@ -121,10 +121,20 @@ const fmt = (n: number) => n.toFixed(2).replace(".", ",") + "€";
 
 function renderItemDetailHtml(i: OrderItem): string {
   if (i.isSetMeal && i.selections?.length) {
-    const lines = i.selections
-      .map((s) => {
-        const extra = s.priceDelta > 0 ? ` (+${fmt(s.priceDelta)})` : "";
-        return `&nbsp;&nbsp;· ${escapeHtml(s.name)}${extra}`;
+    // 按 name+priceDelta 聚合，同一道菜选多份显示 "名字 × N"
+    const grouped: { name: string; priceDelta: number; count: number }[] = [];
+    for (const s of i.selections) {
+      const existing = grouped.find(
+        (g) => g.name === s.name && g.priceDelta === s.priceDelta
+      );
+      if (existing) existing.count += 1;
+      else grouped.push({ name: s.name, priceDelta: s.priceDelta, count: 1 });
+    }
+    const lines = grouped
+      .map(({ name, priceDelta, count }) => {
+        const qty = count > 1 ? ` × ${count}` : "";
+        const extra = priceDelta > 0 ? ` (+${fmt(priceDelta * count)})` : "";
+        return `&nbsp;&nbsp;· ${escapeHtml(name)}${qty}${extra}`;
       })
       .join("<br/>");
     return `<div style="font-size:11px;color:#999;margin-top:3px;line-height:1.5;">${lines}</div>`;
