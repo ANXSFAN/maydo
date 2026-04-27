@@ -13,6 +13,7 @@ import AllergenBadges from "@/components/ui/AllergenBadges";
 import MenuItemOptionsModal, { type SelectedOption } from "@/components/pedido/MenuItemOptionsModal";
 import SetMealSelector, { type SetMealResult, type SetMealSelection } from "@/components/pedido/SetMealSelector";
 import { useModalLock } from "@/lib/use-modal-lock";
+import { buildPickupSlots } from "@/lib/business-hours";
 
 type Props = {
   categories: MenuCategoryData[];
@@ -20,7 +21,7 @@ type Props = {
   setMeals: SetMealData[];
 };
 
-type Section = "all" | "sushi" | "cocina" | "menu";
+type Section = "all" | "sushi" | "cocina";
 
 type RegularCartItem = {
   kind: "item";
@@ -52,44 +53,8 @@ const hasOptions = (item: MenuItemData) =>
 
 type OrderStatus = "idle" | "loading" | "error";
 
-// 营业时段（每天相同）：13:00–16:30 / 20:00–23:30
-const OPENING_HOURS: ReadonlyArray<readonly [string, string]> = [
-  ["13:00", "16:30"],
-  ["20:00", "23:30"],
-];
-const PICKUP_INTERVAL_MIN = 15;
-const PICKUP_BUFFER_MIN = 30; // 厨房准备时间，最早可取餐 = 当前 + 30min
-
-const toMinutes = (hm: string) => {
-  const [h, m] = hm.split(":").map(Number);
-  return h * 60 + m;
-};
-const fromMinutes = (mins: number) => {
-  const h = Math.floor(mins / 60);
-  const m = mins % 60;
-  return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
-};
-
-type PickupSlots = { lunch: string[]; dinner: string[] };
-
-const buildPickupSlots = (nowMinutes: number): PickupSlots => {
-  const earliest = nowMinutes + PICKUP_BUFFER_MIN;
-  const segment = (range: readonly [string, string]) => {
-    const start = toMinutes(range[0]);
-    const end = toMinutes(range[1]);
-    const slots: string[] = [];
-    for (let t = start; t <= end; t += PICKUP_INTERVAL_MIN) {
-      if (t >= earliest) slots.push(fromMinutes(t));
-    }
-    return slots;
-  };
-  return {
-    lunch: segment(OPENING_HOURS[0]),
-    dinner: segment(OPENING_HOURS[1]),
-  };
-};
-
 const CART_STORAGE_KEY = "sushi-maydo-cart";
+const SLOTS_DEFAULT_VISIBLE = 6; // 每段默认显示几个时段，超出收起
 
 export default function PedidoContent({ categories, items, setMeals }: Props) {
   const t = useTranslations("Pedido");
@@ -140,7 +105,6 @@ export default function PedidoContent({ categories, items, setMeals }: Props) {
   );
 
   const visibleCategories = useMemo(() => {
-    if (activeSection === "menu") return [];
     if (activeSection === "all") return categoriesWithItems;
     if (activeSection === "sushi")
       return categoriesWithItems.filter((c) => sushiCatIds.has(c.category.id));
@@ -148,35 +112,25 @@ export default function PedidoContent({ categories, items, setMeals }: Props) {
   }, [activeSection, categoriesWithItems, sushiCatIds]);
 
   // ---- Time slot filtering ----
-  const [nowMinutes, setNowMinutes] = useState(() => {
-    const d = new Date();
-    return d.getHours() * 60 + d.getMinutes();
-  });
+  const [now, setNow] = useState(() => new Date());
 
   useEffect(() => {
-    const timer = setInterval(() => {
-      const d = new Date();
-      setNowMinutes(d.getHours() * 60 + d.getMinutes());
-    }, 60_000);
+    const timer = setInterval(() => setNow(new Date()), 60_000);
     return () => clearInterval(timer);
   }, []);
 
-  const pickupSlots = useMemo(() => buildPickupSlots(nowMinutes), [nowMinutes]);
-  const hasAnySlot = pickupSlots.lunch.length + pickupSlots.dinner.length > 0;
+  const pickupSlots = useMemo(() => buildPickupSlots(now), [now]);
+  const hasAnySlot = !pickupSlots.isClosed;
+  const [showAllLunch, setShowAllLunch] = useState(false);
+  const [showAllDinner, setShowAllDinner] = useState(false);
 
   // 套餐按 available_from/to 过滤当前可点的
-  const availableSetMeals = useMemo(() => {
-    const now = new Date();
-    return setMeals.filter((sm) => isSetMealAvailableAt(sm, now));
-    // nowMinutes 每分钟变化，顺带刷新一次
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [setMeals, nowMinutes]);
+  const availableSetMeals = useMemo(
+    () => setMeals.filter((sm) => isSetMealAvailableAt(sm, now)),
+    [setMeals, now]
+  );
 
-  const availableSections: Section[] = useMemo(() => {
-    const base: Section[] = ["all", "sushi", "cocina"];
-    if (availableSetMeals.length > 0) base.push("menu");
-    return base;
-  }, [availableSetMeals.length]);
+  const availableSections: Section[] = useMemo(() => ["all", "sushi", "cocina"], []);
 
   // ---- Cart helpers ----
   useEffect(() => {
@@ -690,71 +644,70 @@ export default function PedidoContent({ categories, items, setMeals }: Props) {
                 </div>
               )}
 
-              {/* Set meals (when menu tab active) */}
-              {activeSection === "menu" && (
-                <div className="space-y-4 sm:space-y-5">
-                  {availableSetMeals.map((sm) => {
-                    const smName = getLocalizedText(sm.name, locale);
-                    return (
-                      <div
-                        key={sm.id}
-                        className="bg-white border border-beige p-5 sm:p-6 transition-all duration-300 hover:shadow-[0_8px_30px_rgba(122,66,66,0.1)]"
-                      >
-                        <div className="flex items-start justify-between gap-4 mb-3">
-                          <div className="min-w-0">
-                            <p className="font-body text-[10px] tracking-[2px] uppercase text-camel mb-1">
-                              {t("setMealTagline")}
-                            </p>
-                            <h4 className="text-[20px] sm:text-[22px] text-maroon font-light">
-                              {smName}
-                            </h4>
-                          </div>
-                          <span className="text-[22px] sm:text-[26px] text-camel font-light shrink-0">
-                            {formatPrice(sm.price)}
-                          </span>
-                        </div>
+              {/* Set meals hero (always visible on "all" tab) */}
+              {activeSection === "all" && availableSetMeals.length > 0 && (
+                <div className="mb-8 sm:mb-10">
+                  <div className="flex items-baseline gap-3 mb-4">
+                    <h3 className="text-[18px] sm:text-[22px] font-light text-maroon whitespace-nowrap">
+                      {t("setMealsHeroTitle")}
+                    </h3>
+                    <div className="flex-1 h-px bg-camel/40" />
+                    <span className="font-body text-[10px] sm:text-[11px] text-camel tracking-[1px] uppercase">
+                      {availableSetMeals.length} {t("items")}
+                    </span>
+                  </div>
 
-                        <div className="flex flex-wrap gap-x-4 gap-y-1 font-body text-[12px] text-gray mb-4">
-                          <span>
-                            {t("setMealCoursesCount", { count: sm.courses.length })}
-                          </span>
-                          {sm.availableFrom && sm.availableTo && (
-                            <span>
-                              {sm.availableFrom} - {sm.availableTo}
-                            </span>
-                          )}
-                        </div>
-
-                        {sm.courses.length > 0 && (
-                          <ol className="mb-4 space-y-1">
-                            {sm.courses.map((course) => (
-                              <li
-                                key={course.courseNumber}
-                                className="font-body text-[13px] text-ink/80 flex items-baseline gap-2"
-                              >
-                                <span className="text-camel font-mono text-[11px]">
-                                  {String(course.courseNumber).padStart(2, "0")}
-                                </span>
-                                <span>{getLocalizedText(course.label, locale)}</span>
-                                {course.maxChoices > 1 && (
-                                  <span className="font-body text-[11px] text-gray">
-                                    ({t("chooseUpTo", { count: course.maxChoices })})
-                                  </span>
-                                )}
-                              </li>
-                            ))}
-                          </ol>
-                        )}
-
-                        <button
-                          onClick={() => setSelectedSetMeal(sm)}
-                          className="w-full sm:w-auto h-11 px-6 bg-maroon text-white font-body text-[12px] tracking-[2px] uppercase border-none cursor-pointer transition-all duration-300 hover:bg-maroon-dark active:scale-[0.98]"
+                  <div className="flex gap-3 sm:gap-4 overflow-x-auto scrollbar-hide snap-x snap-mandatory -mx-[clamp(12px,4vw,40px)] px-[clamp(12px,4vw,40px)] pb-2">
+                    {availableSetMeals.map((sm) => {
+                      const smName = getLocalizedText(sm.name, locale);
+                      return (
+                        <div
+                          key={sm.id}
+                          className="snap-start shrink-0 w-[78%] sm:w-[340px] bg-gradient-to-br from-maroon to-maroon-dark text-white p-5 sm:p-6 flex flex-col"
                         >
-                          {t("setMealChoose")}
-                        </button>
-                      </div>
-                    );
-                  })}
+                          <p className="font-body text-[10px] tracking-[2px] uppercase text-camel-light/90 mb-1">
+                            {t("setMealTagline")}
+                          </p>
+                          <h4 className="text-[20px] sm:text-[22px] font-light leading-snug mb-2">
+                            {smName}
+                          </h4>
+
+                          <div className="flex flex-wrap gap-x-3 gap-y-0.5 font-body text-[11px] text-white/70 mb-3">
+                            <span>{t("setMealCoursesCount", { count: sm.courses.length })}</span>
+                            {sm.availableFrom && sm.availableTo && (
+                              <span>· {sm.availableFrom}–{sm.availableTo}</span>
+                            )}
+                          </div>
+
+                          {sm.courses.length > 0 && (
+                            <ul className="mb-4 space-y-1 flex-1">
+                              {sm.courses.map((course) => (
+                                <li
+                                  key={course.courseNumber}
+                                  className="font-body text-[12px] text-white/85 flex items-baseline gap-2 leading-snug"
+                                >
+                                  <span className="w-1 h-1 bg-camel-light rounded-full shrink-0 translate-y-[-2px]" />
+                                  <span className="line-clamp-1">{getLocalizedText(course.label, locale)}</span>
+                                </li>
+                              ))}
+                            </ul>
+                          )}
+
+                          <div className="flex items-center justify-between gap-3 mt-auto pt-3 border-t border-white/15">
+                            <span className="text-[24px] sm:text-[26px] font-light">
+                              {formatPrice(sm.price)}
+                            </span>
+                            <button
+                              onClick={() => setSelectedSetMeal(sm)}
+                              className="h-10 px-5 bg-white text-maroon font-body text-[11px] tracking-[2px] uppercase border-none cursor-pointer transition-all duration-300 hover:bg-cream active:scale-[0.97]"
+                            >
+                              {t("setMealChoose")}
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
               )}
 
@@ -772,7 +725,7 @@ export default function PedidoContent({ categories, items, setMeals }: Props) {
                       </span>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-3 sm:gap-5 md:grid-cols-3 xl:grid-cols-4">
+                    <div className="flex flex-col gap-2 lg:grid lg:grid-cols-3 lg:gap-5 xl:grid-cols-4">
                       {catItems.map((item) => {
                         const plainQty = getPlainLineQty(item.id);
                         const totalQty = getCartQuantity(item.id);
@@ -782,79 +735,82 @@ export default function PedidoContent({ categories, items, setMeals }: Props) {
                         return (
                           <div
                             key={item.id}
-                            className="group bg-white border border-beige transition-all duration-300 hover:shadow-[0_8px_30px_rgba(122,66,66,0.1)] overflow-hidden flex flex-col"
+                            className="group bg-white border border-beige transition-all duration-300 hover:shadow-[0_8px_30px_rgba(122,66,66,0.1)] overflow-hidden flex lg:flex-col"
                           >
                             {item.imageUrl ? (
-                              <div className="relative aspect-square overflow-hidden bg-white">
+                              <div className="relative shrink-0 w-24 sm:w-28 lg:w-full aspect-square overflow-hidden bg-white">
                                 <Image
                                   src={item.imageUrl}
                                   alt={itemName}
                                   fill
-                                  className="object-contain transition-transform duration-500 group-hover:scale-[1.05]"
-                                  sizes="(max-width: 640px) 50vw, (max-width: 768px) 50vw, (max-width: 1280px) 33vw, 25vw"
+                                  className="object-contain lg:transition-transform lg:duration-500 lg:group-hover:scale-[1.05]"
+                                  sizes="(max-width: 640px) 96px, (max-width: 1024px) 112px, (max-width: 1280px) 33vw, 25vw"
                                 />
                               </div>
                             ) : (
-                              <div className="aspect-square bg-beige/30 flex items-center justify-center">
-                                <span className="text-gray/30 text-4xl font-cjk">鮨</span>
+                              <div className="shrink-0 w-24 sm:w-28 lg:w-full aspect-square bg-beige/30 flex items-center justify-center">
+                                <span className="text-gray/30 text-3xl lg:text-4xl font-cjk">鮨</span>
                               </div>
                             )}
 
-                            <div className="p-3.5 sm:p-4 flex flex-col flex-1">
-                              <h4 className="text-[20px] sm:text-[15px] font-medium sm:font-normal text-maroon leading-snug">
+                            <div className="p-3 sm:p-3.5 lg:p-4 flex flex-col flex-1 min-w-0">
+                              <h4 className="text-[15px] lg:text-[15px] font-medium lg:font-normal text-maroon leading-snug">
                                 {itemName}
                               </h4>
                               {itemDesc && (
-                                <p className="font-body text-[16px] sm:text-[12px] text-ink/60 mt-1 leading-relaxed line-clamp-2">
+                                <p className="font-body text-[12px] text-ink/60 mt-0.5 lg:mt-1 leading-relaxed line-clamp-1 lg:line-clamp-2">
                                   {itemDesc}
                                 </p>
                               )}
                               <AllergenBadges allergens={item.allergens} compact />
-                              <div className="mt-auto pt-3">
-                                <span className="text-[24px] sm:text-[16px] font-light text-camel block mb-2.5 sm:mb-3">
+
+                              <div className="mt-auto pt-2 lg:pt-3 flex items-center justify-between gap-3 lg:flex-col lg:items-stretch">
+                                <span className="text-[16px] font-light text-camel lg:block lg:mb-3 shrink-0">
                                   {formatPrice(item.price)}
                                   {itemHasOptions && (
-                                    <span className="text-[12px] sm:text-[10px] text-gray ml-1">+</span>
+                                    <span className="text-[10px] text-gray ml-1">+</span>
                                   )}
                                 </span>
-                                {itemHasOptions ? (
-                                  <button
-                                    onClick={() => addToCart(item)}
-                                    className="w-full h-10 sm:h-9 bg-maroon text-white font-body text-[12px] sm:text-[11px] tracking-[2px] uppercase border-none cursor-pointer transition-all duration-300 hover:bg-maroon-dark active:scale-[0.97] flex items-center justify-center gap-2"
-                                  >
-                                    <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-                                      <path d="M8 3v10M3 8h10" />
-                                    </svg>
-                                    {t("add")}
-                                    {totalQty > 0 && (
-                                      <span className="ml-1 px-1.5 py-0.5 bg-white/20 text-[10px]">×{totalQty}</span>
-                                    )}
-                                  </button>
-                                ) : plainQty > 0 ? (
-                                  <div className="flex items-center justify-between border border-beige">
-                                    <button
-                                      onClick={() => decrementPlainItem(item.id)}
-                                      aria-label="decrease quantity"
-                                      className="w-10 h-10 sm:w-8 sm:h-8 text-maroon font-body text-base sm:text-sm flex items-center justify-center cursor-pointer transition-colors hover:bg-beige/50 bg-transparent border-none"
-                                    >−</button>
-                                    <span className="font-body text-[15px] sm:text-[14px] text-maroon font-medium">{plainQty}</span>
+                                <div className="shrink-0 lg:w-full">
+                                  {itemHasOptions ? (
                                     <button
                                       onClick={() => addToCart(item)}
-                                      aria-label="increase quantity"
-                                      className="w-10 h-10 sm:w-8 sm:h-8 text-maroon font-body text-base sm:text-sm flex items-center justify-center cursor-pointer transition-colors hover:bg-beige/50 bg-transparent border-none"
-                                    >+</button>
-                                  </div>
-                                ) : (
-                                  <button
-                                    onClick={() => addToCart(item)}
-                                    className="w-full h-10 sm:h-9 bg-maroon text-white font-body text-[12px] sm:text-[11px] tracking-[2px] uppercase border-none cursor-pointer transition-all duration-300 hover:bg-maroon-dark active:scale-[0.97] flex items-center justify-center gap-2"
-                                  >
-                                    <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-                                      <path d="M8 3v10M3 8h10" />
-                                    </svg>
-                                    {t("add")}
-                                  </button>
-                                )}
+                                      className="h-9 px-3 lg:px-0 lg:w-full bg-maroon text-white font-body text-[11px] tracking-[2px] uppercase border-none cursor-pointer transition-all duration-300 hover:bg-maroon-dark active:scale-[0.97] flex items-center justify-center gap-2"
+                                    >
+                                      <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                                        <path d="M8 3v10M3 8h10" />
+                                      </svg>
+                                      {t("add")}
+                                      {totalQty > 0 && (
+                                        <span className="ml-1 px-1.5 py-0.5 bg-white/20 text-[10px]">×{totalQty}</span>
+                                      )}
+                                    </button>
+                                  ) : plainQty > 0 ? (
+                                    <div className="flex items-center justify-between border border-beige lg:w-full">
+                                      <button
+                                        onClick={() => decrementPlainItem(item.id)}
+                                        aria-label="decrease quantity"
+                                        className="w-9 h-9 lg:w-10 lg:h-9 text-maroon font-body text-base flex items-center justify-center cursor-pointer transition-colors hover:bg-beige/50 bg-transparent border-none"
+                                      >−</button>
+                                      <span className="font-body text-[14px] text-maroon font-medium px-2 min-w-[1.5rem] text-center">{plainQty}</span>
+                                      <button
+                                        onClick={() => addToCart(item)}
+                                        aria-label="increase quantity"
+                                        className="w-9 h-9 lg:w-10 lg:h-9 text-maroon font-body text-base flex items-center justify-center cursor-pointer transition-colors hover:bg-beige/50 bg-transparent border-none"
+                                      >+</button>
+                                    </div>
+                                  ) : (
+                                    <button
+                                      onClick={() => addToCart(item)}
+                                      className="h-9 px-3 lg:px-0 lg:w-full bg-maroon text-white font-body text-[11px] tracking-[2px] uppercase border-none cursor-pointer transition-all duration-300 hover:bg-maroon-dark active:scale-[0.97] flex items-center justify-center gap-2"
+                                    >
+                                      <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                                        <path d="M8 3v10M3 8h10" />
+                                      </svg>
+                                      {t("add")}
+                                    </button>
+                                  )}
+                                </div>
                               </div>
                             </div>
                           </div>
@@ -1182,7 +1138,11 @@ export default function PedidoContent({ categories, items, setMeals }: Props) {
                       )}
                     </label>
                     {!hasAnySlot ? (
-                      <p className="font-body text-[13px] text-gray font-light mb-6">{t("noSlotsAvailable")}</p>
+                      <p className="font-body text-[13px] text-gray font-light mb-6">
+                        {pickupSlots.closedReason === "monday"
+                          ? t("closedMonday")
+                          : t("closedToday")}
+                      </p>
                     ) : (
                       <div
                         role="radiogroup"
@@ -1192,13 +1152,20 @@ export default function PedidoContent({ categories, items, setMeals }: Props) {
                         {(["lunch", "dinner"] as const).map((seg) => {
                           const slots = pickupSlots[seg];
                           if (slots.length === 0) return null;
+                          const showAll = seg === "lunch" ? showAllLunch : showAllDinner;
+                          const setShowAll = seg === "lunch" ? setShowAllLunch : setShowAllDinner;
+                          // 已选时段在收起范围之外则强制展开，避免视觉上"丢失"
+                          const selectedIdx = slots.indexOf(selectedPickupTime);
+                          const forceExpand = selectedIdx >= SLOTS_DEFAULT_VISIBLE;
+                          const visible = showAll || forceExpand ? slots : slots.slice(0, SLOTS_DEFAULT_VISIBLE);
+                          const hidden = slots.length - visible.length;
                           return (
                             <div key={seg}>
                               <p className="font-body text-[10px] tracking-[2px] uppercase text-camel mb-2">
                                 {seg === "lunch" ? t("pickupSlotLunch") : t("pickupSlotDinner")}
                               </p>
                               <div className="grid grid-cols-3 sm:flex sm:flex-wrap gap-2">
-                                {slots.map((slot) => (
+                                {visible.map((slot) => (
                                   <button
                                     key={slot}
                                     role="radio"
@@ -1219,6 +1186,14 @@ export default function PedidoContent({ categories, items, setMeals }: Props) {
                                   </button>
                                 ))}
                               </div>
+                              {hidden > 0 && !forceExpand && (
+                                <button
+                                  onClick={() => setShowAll(!showAll)}
+                                  className="mt-2 font-body text-[11px] tracking-[1px] uppercase text-camel hover:text-maroon transition-colors cursor-pointer bg-transparent border-none px-0"
+                                >
+                                  {showAll ? t("showLessSlots") : t("showMoreSlots", { count: hidden })}
+                                </button>
+                              )}
                             </div>
                           );
                         })}
@@ -1266,10 +1241,16 @@ export default function PedidoContent({ categories, items, setMeals }: Props) {
 
                     <button
                       onClick={handlePlaceOrder}
-                      disabled={orderStatus === "loading"}
+                      disabled={orderStatus === "loading" || !hasAnySlot}
                       className="w-full mt-6 sm:mt-8 px-12 py-4 sm:py-[18px] bg-maroon text-white border-none font-heading text-[14px] sm:text-base tracking-[3px] uppercase cursor-pointer transition-all duration-400 hover:bg-maroon-dark active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed"
                     >
-                      {orderStatus === "loading" ? t("submitting") : t("placeOrder")}
+                      {orderStatus === "loading"
+                        ? t("submitting")
+                        : !hasAnySlot
+                          ? pickupSlots.closedReason === "monday"
+                            ? t("closedMonday")
+                            : t("closedToday")
+                          : t("placeOrder")}
                     </button>
                     <p className="font-body text-xs text-gray text-center mt-3 font-light">{t("payAtStore")}</p>
                   </>
