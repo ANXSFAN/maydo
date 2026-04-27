@@ -5,7 +5,6 @@ import Image from "next/image";
 import { useTranslations, useLocale } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import FadeIn from "@/components/ui/FadeIn";
 import DiamondDivider from "@/components/ui/DiamondDivider";
 import type { MenuCategoryData, MenuItemData, SetMealData } from "@/lib/menu-types";
 import { getLocalizedText, isSetMealAvailableAt } from "@/lib/menu-types";
@@ -20,8 +19,6 @@ type Props = {
   items: MenuItemData[];
   setMeals: SetMealData[];
 };
-
-type Section = "all" | "sushi" | "cocina";
 
 type RegularCartItem = {
   kind: "item";
@@ -61,7 +58,6 @@ export default function PedidoContent({ categories, items, setMeals }: Props) {
   const tFooter = useTranslations("Footer");
   const locale = useLocale();
   const router = useRouter();
-  const [activeSection, setActiveSection] = useState<Section>("all");
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [showCheckout, setShowCheckout] = useState(false);
@@ -99,17 +95,7 @@ export default function PedidoContent({ categories, items, setMeals }: Props) {
     }));
   }, [categories, items]);
 
-  const sushiCatIds = useMemo(
-    () => new Set(categories.filter((c) => c.station === "sushi").map((c) => c.id)),
-    [categories]
-  );
-
-  const visibleCategories = useMemo(() => {
-    if (activeSection === "all") return categoriesWithItems;
-    if (activeSection === "sushi")
-      return categoriesWithItems.filter((c) => sushiCatIds.has(c.category.id));
-    return categoriesWithItems.filter((c) => !sushiCatIds.has(c.category.id));
-  }, [activeSection, categoriesWithItems, sushiCatIds]);
+  const visibleCategories = categoriesWithItems;
 
   // ---- Time slot filtering ----
   const [now, setNow] = useState(() => new Date());
@@ -129,8 +115,6 @@ export default function PedidoContent({ categories, items, setMeals }: Props) {
     () => setMeals.filter((sm) => isSetMealAvailableAt(sm, now)),
     [setMeals, now]
   );
-
-  const availableSections: Section[] = useMemo(() => ["all", "sushi", "cocina"], []);
 
   // ---- Cart helpers ----
   useEffect(() => {
@@ -319,7 +303,7 @@ export default function PedidoContent({ categories, items, setMeals }: Props) {
   // Auto-highlight category on scroll —— mobile sticky 顶部约 150px（tabs + cat nav），desktop 约 100px
   useEffect(() => {
     const isMobile = typeof window !== "undefined" && window.innerWidth < 1024;
-    const rootMargin = isMobile ? "-180px 0px -55% 0px" : "-120px 0px -60% 0px";
+    const rootMargin = isMobile ? "-130px 0px -55% 0px" : "-120px 0px -60% 0px";
     const observers: IntersectionObserver[] = [];
     visibleCategories.forEach(({ category }) => {
       const el = document.getElementById(`cat-${category.id}`);
@@ -558,23 +542,10 @@ export default function PedidoContent({ categories, items, setMeals }: Props) {
 
   return (
     <>
-      {/* Sticky top nav for mobile */}
+      {/* Sticky category nav for mobile */}
       <div className="lg:hidden sticky top-[60px] z-40 bg-cream/95 backdrop-blur-md border-b border-beige/50">
-        <div className="flex">
-          {availableSections.map((sec) => (
-            <button
-              key={sec}
-              onClick={() => { setActiveSection(sec); setActiveCategory(null); }}
-              className={`flex-1 py-3 text-[12px] tracking-[2px] uppercase font-body font-light transition-all duration-200 cursor-pointer border-none ${
-                activeSection === sec ? "bg-maroon text-white" : "bg-transparent text-maroon active:bg-beige/50"
-              }`}
-            >
-              {t(sec)}
-            </button>
-          ))}
-        </div>
         {visibleCategories.length > 0 && (
-          <div ref={catNavRef} className="flex gap-2 px-3 py-2 overflow-x-auto scrollbar-hide border-t border-beige/30">
+          <div ref={catNavRef} className="flex gap-2 px-3 py-2 overflow-x-auto scrollbar-hide">
             {visibleCategories.map(({ category }) => (
               <button
                 key={category.id}
@@ -603,25 +574,6 @@ export default function PedidoContent({ categories, items, setMeals }: Props) {
           <div className="flex gap-10 max-lg:flex-col">
             {/* Menu items */}
             <div className="flex-1 min-w-0">
-              {/* Desktop section tabs */}
-              <FadeIn className="hidden lg:block">
-                <div className="flex gap-3 mb-5">
-                  {availableSections.map((sec) => (
-                    <button
-                      key={sec}
-                      onClick={() => { setActiveSection(sec); setActiveCategory(null); }}
-                      className={`px-5 py-2.5 text-[12px] tracking-[2px] uppercase font-body font-light border transition-all duration-300 cursor-pointer ${
-                        activeSection === sec
-                          ? "bg-maroon text-white border-maroon"
-                          : "bg-transparent text-maroon border-beige hover:border-maroon"
-                      }`}
-                    >
-                      {t(sec)}
-                    </button>
-                  ))}
-                </div>
-              </FadeIn>
-
               {/* Desktop category nav */}
               {visibleCategories.length > 0 && (
                 <div className="hidden lg:flex flex-wrap gap-2 mb-8">
@@ -644,8 +596,8 @@ export default function PedidoContent({ categories, items, setMeals }: Props) {
                 </div>
               )}
 
-              {/* Set meals hero (always visible on "all" tab) */}
-              {activeSection === "all" && availableSetMeals.length > 0 && (
+              {/* Set meals hero — always at top */}
+              {availableSetMeals.length > 0 && (
                 <div className="mb-8 sm:mb-10">
                   <div className="flex items-baseline gap-3 mb-4">
                     <h3 className="text-[18px] sm:text-[22px] font-light text-maroon whitespace-nowrap">
@@ -714,7 +666,7 @@ export default function PedidoContent({ categories, items, setMeals }: Props) {
               {/* Category sections */}
               <div className="space-y-8 sm:space-y-10">
                 {visibleCategories.map(({ category, items: catItems }) => (
-                  <div key={category.id} id={`cat-${category.id}`} className="scroll-mt-[170px] lg:scroll-mt-24">
+                  <div key={category.id} id={`cat-${category.id}`} className="scroll-mt-[120px] lg:scroll-mt-24">
                     <div className="flex items-center gap-3 sm:gap-4 mb-4 sm:mb-5">
                       <h3 className="text-[18px] sm:text-[22px] font-light text-maroon whitespace-nowrap">
                         {getLocalizedText(category.name, locale)}

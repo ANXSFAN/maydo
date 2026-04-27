@@ -14,7 +14,10 @@
     "about": "Nosotros",
     "events": "Eventos",
     "more": "Más",
-    "langSwitch": "ES"
+    "langSwitch": "ES",
+    "menuAria": "Abrir menú",
+    "closeAria": "Cerrar menú",
+    "whatsappAria": "Contáctenos por WhatsApp"
   },
   "Hero": {
     "sub": "Restaurante Japonés · Buffet Libre",

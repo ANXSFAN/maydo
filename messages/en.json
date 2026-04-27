@@ -14,7 +14,10 @@
     "about": "About",
     "events": "Events",
     "more": "More",
-    "langSwitch": "EN"
+    "langSwitch": "EN",
+    "menuAria": "Open menu",
+    "closeAria": "Close menu",
+    "whatsappAria": "Contact us on WhatsApp"
   },
   "Hero": {
     "sub": "Japanese Restaurant · All-You-Can-Eat Buffet",

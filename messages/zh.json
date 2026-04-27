@@ -14,7 +14,10 @@
     "about": "关于",
     "events": "包场活动",
     "more": "更多",
-    "langSwitch": "中文"
+    "langSwitch": "中文",
+    "menuAria": "打开菜单",
+    "closeAria": "关闭菜单",
+    "whatsappAria": "通过 WhatsApp 联系我们"
   },
   "Hero": {
     "sub": "日式料理 · 自助餐厅",

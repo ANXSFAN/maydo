@@ -103,25 +103,59 @@ export default function Navbar() {
             />
           </Link>
 
-          {/* Hamburger - mobile only */}
-          <button
-            className="md:hidden cursor-pointer bg-transparent border-none p-2 z-[60] relative"
-            onClick={() => setMenuOpen(!menuOpen)}
-            aria-label="Menu"
-          >
-            <span
-              className="block w-6 h-[1.5px] bg-white my-[5px] transition-all duration-300"
-              style={menuOpen ? { transform: "rotate(45deg) translate(4px,4px)" } : {}}
-            />
-            <span
-              className="block w-6 h-[1.5px] bg-white my-[5px] transition-all duration-300"
-              style={menuOpen ? { opacity: 0 } : {}}
-            />
-            <span
-              className="block w-6 h-[1.5px] bg-white my-[5px] transition-all duration-300"
-              style={menuOpen ? { transform: "rotate(-45deg) translate(4px,-4px)" } : {}}
-            />
-          </button>
+          {/* Mobile right side: WhatsApp + Hamburger */}
+          <div className="md:hidden flex items-center gap-1 z-[60] relative">
+            <a
+              href="https://wa.me/34936844036"
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label={t("whatsappAria")}
+              className="w-10 h-10 flex items-center justify-center text-white/85 hover:text-camel transition-colors no-underline"
+            >
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="w-[22px] h-[22px]"
+              >
+                <path d="M20.5 12a8.5 8.5 0 0 1-12.4 7.5L3.5 21l1.6-4.5A8.5 8.5 0 1 1 20.5 12z" />
+                <path d="M9.4 8.7c.3-.5.8-.5 1.1-.5h.4c.2 0 .5 0 .7.5l.8 1.9c.1.3 0 .6-.2.8l-.4.4a.4.4 0 0 0-.1.5 6 6 0 0 0 2.8 2.5c.2.1.4.1.5-.1l.4-.6c.2-.3.5-.4.8-.3l1.8 1c.3.1.5.4.4.7-.2.7-.6 1.3-1.3 1.5-.7.3-1.5.4-2.2.2a8 8 0 0 1-5.5-5.4 2.6 2.6 0 0 1 .2-2.1z" />
+              </svg>
+            </a>
+            <button
+              className="w-10 h-10 cursor-pointer bg-transparent border-none flex items-center justify-center text-white"
+              onClick={() => setMenuOpen(!menuOpen)}
+              aria-label={menuOpen ? t("closeAria") : t("menuAria")}
+              aria-expanded={menuOpen}
+            >
+              {menuOpen ? (
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.8"
+                  strokeLinecap="round"
+                  className="w-6 h-6"
+                >
+                  <path d="M6 6l12 12M18 6L6 18" />
+                </svg>
+              ) : (
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.5"
+                  strokeLinecap="round"
+                  className="w-6 h-6"
+                >
+                  <path d="M4 7h16M4 12h16M4 17h16" />
+                </svg>
+              )}
+            </button>
+          </div>
 
           {/* Desktop nav */}
           <div className="hidden md:flex items-center gap-7">

@@ -14,7 +14,10 @@
     "about": "Nosaltres",
     "events": "Esdeveniments",
     "more": "Més",
-    "langSwitch": "CA"
+    "langSwitch": "CA",
+    "menuAria": "Obrir menú",
+    "closeAria": "Tancar menú",
+    "whatsappAria": "Contacteu-nos per WhatsApp"
   },
   "Hero": {
     "sub": "Restaurant Japonès · Bufet Lliure",
