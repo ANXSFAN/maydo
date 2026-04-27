@@ -50,7 +50,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       template: `%s | Sushi Maydo`,
     },
     description,
-    metadataBase: new URL("https://sushimaydo.com"),
+    metadataBase: new URL("https://sushimaydo.es"),
     openGraph: {
       title,
       description,
@@ -96,8 +96,8 @@ export default async function LocaleLayout({ children, params }: Props) {
     "@context": "https://schema.org",
     "@type": "Restaurant",
     name: "Sushi Maydo",
-    image: "https://sushimaydo.com/images/logo.svg",
-    url: "https://sushimaydo.com",
+    image: "https://sushimaydo.es/images/logo.svg",
+    url: "https://sushimaydo.es",
     telephone: "+34936844036",
     email: "sushimaydobcnplazaeuropa@gmail.com",
     servesCuisine: ["Japanese", "Sushi"],
@@ -134,8 +134,8 @@ export default async function LocaleLayout({ children, params }: Props) {
       ratingValue: "4.5",
       reviewCount: "500",
     },
-    hasMenu: "https://sushimaydo.com/es/carta",
-    acceptsReservations: "https://sushimaydo.com/es/reservas",
+    hasMenu: "https://sushimaydo.es/es/carta",
+    acceptsReservations: "https://sushimaydo.es/es/reservas",
   };
 
   return (

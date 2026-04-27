@@ -3,7 +3,7 @@ import { Resend } from "resend";
 const ORDERLIX_API_URL = process.env.ORDERLIX_API_URL!;
 const ORDERLIX_TENANT_ID = process.env.ORDERLIX_TENANT_ID!;
 const ORDERLIX_WEBHOOK_SECRET = process.env.ORDERLIX_WEBHOOK_SECRET;
-const RESTAURANT_EMAIL = "sushimaydobcnplazaeuropa@gmail.com";
+const RESTAURANT_EMAIL = "jcy86882010@gmail.com";
 
 const TWILIO_ACCOUNT_SID = process.env.TWILIO_ACCOUNT_SID;
 const TWILIO_AUTH_TOKEN = process.env.TWILIO_AUTH_TOKEN;
@@ -169,7 +169,7 @@ async function notifyRestaurantEmail(order: WebOrder) {
 
   const resend = new Resend(process.env.RESEND_API_KEY);
   await resend.emails.send({
-    from: "Sushi Maydo <noreply@sushimaydo.com>",
+    from: "Sushi Maydo <noreply@sushimaydo.es>",
     to: [RESTAURANT_EMAIL],
     replyTo: order.email || undefined,
     subject: `[Pedido nuevo] ${order.name} · Recogida ${order.pickupTime} · ${fmt(order.total)}`,
@@ -244,7 +244,7 @@ async function notifyCustomerEmail(order: WebOrder) {
 
   const resend = new Resend(process.env.RESEND_API_KEY);
   await resend.emails.send({
-    from: "Sushi Maydo <noreply@sushimaydo.com>",
+    from: "Sushi Maydo <noreply@sushimaydo.es>",
     to: [order.email],
     replyTo: RESTAURANT_EMAIL,
     subject: tr.subject(order.orderId),

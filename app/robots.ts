@@ -7,6 +7,6 @@ export default function robots(): MetadataRoute.Robots {
       allow: "/",
       disallow: ["/api/"],
     },
-    sitemap: "https://sushimaydo.com/sitemap.xml",
+    sitemap: "https://sushimaydo.es/sitemap.xml",
   };
 }

@@ -74,7 +74,7 @@ export async function POST(request: NextRequest) {
 
         // Notify restaurant (so the staff can hold a table)
         await resend.emails.send({
-          from: "Sushi Maydo <noreply@sushimaydo.com>",
+          from: "Sushi Maydo <noreply@sushimaydo.es>",
           to: [RESTAURANT_EMAIL],
           replyTo: email,
           subject: `[Reserva nueva] ${name} · ${date} ${time} · ${guests}p`,
@@ -99,7 +99,7 @@ export async function POST(request: NextRequest) {
 
         // Confirm to customer
         await resend.emails.send({
-          from: "Sushi Maydo <noreply@sushimaydo.com>",
+          from: "Sushi Maydo <noreply@sushimaydo.es>",
           to: [email],
           subject: "Confirmación de reserva - Sushi Maydo",
           html: `

@@ -39,7 +39,7 @@ async function notifyCancellation(args: { email: string; name?: string; orderId?
   try {
     const resend = new Resend(process.env.RESEND_API_KEY);
     await resend.emails.send({
-      from: "Sushi Maydo <noreply@sushimaydo.com>",
+      from: "Sushi Maydo <noreply@sushimaydo.es>",
       to: email,
       subject: "Su pedido ha sido cancelado — Sushi Maydo",
       html: `

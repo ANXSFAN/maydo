@@ -1,6 +1,6 @@
 import type { MetadataRoute } from "next";
 
-const BASE_URL = "https://sushimaydo.com";
+const BASE_URL = "https://sushimaydo.es";
 const LOCALES = ["es", "en", "ca", "zh"];
 
 const PAGES = [

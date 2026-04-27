@@ -55,7 +55,7 @@ export async function POST(request: NextRequest) {
     const origin = request.headers.get("origin")
       || request.headers.get("referer")?.replace(/\/[^/]*$/, "")
       || process.env.NEXT_PUBLIC_SITE_URL
-      || "https://sushimaydo.com";
+      || "https://sushimaydo.es";
 
     const orderId = newOrderId();
 

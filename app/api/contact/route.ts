@@ -63,7 +63,7 @@ export async function POST(request: NextRequest) {
           <p style="margin: 0; white-space: pre-line;">${message}</p>
         </div>
         <p style="margin-top: 24px; font-size: 12px; color: #999;">
-          Enviado desde sushimaydo.com
+          Enviado desde sushimaydo.es
         </p>
       </div>
     `;
@@ -78,7 +78,7 @@ export async function POST(request: NextRequest) {
 
     const resend = new Resend(process.env.RESEND_API_KEY);
     const { error } = await resend.emails.send({
-      from: "Sushi Maydo <noreply@sushimaydo.com>",
+      from: "Sushi Maydo <noreply@sushimaydo.es>",
       to: [RESTAURANT_EMAIL],
       replyTo: email,
       subject,
