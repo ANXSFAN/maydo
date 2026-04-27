@@ -5,6 +5,7 @@ import Image from "next/image";
 import { useTranslations, useLocale } from "next-intl";
 import type { MenuItemData } from "@/lib/menu-types";
 import { getLocalizedText } from "@/lib/menu-types";
+import { useModalLock } from "@/lib/use-modal-lock";
 
 export type MenuItemOption = {
   name: Record<string, string>;
@@ -30,6 +31,7 @@ export default function MenuItemOptionsModal({ item, onClose, onConfirm }: Props
   const locale = useLocale();
   const options = ((item.options as MenuItemOption[] | null) ?? []) as MenuItemOption[];
   const [selections, setSelections] = useState<Record<number, number | undefined>>({});
+  useModalLock(true, onClose);
 
   const selected = useMemo<SelectedOption[]>(() => {
     return options

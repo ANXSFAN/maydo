@@ -12,6 +12,7 @@ import { getLocalizedText, isSetMealAvailableAt } from "@/lib/menu-types";
 import AllergenBadges from "@/components/ui/AllergenBadges";
 import MenuItemOptionsModal, { type SelectedOption } from "@/components/pedido/MenuItemOptionsModal";
 import SetMealSelector, { type SetMealResult, type SetMealSelection } from "@/components/pedido/SetMealSelector";
+import { useModalLock } from "@/lib/use-modal-lock";
 
 type Props = {
   categories: MenuCategoryData[];
@@ -51,19 +52,48 @@ const hasOptions = (item: MenuItemData) =>
 
 type OrderStatus = "idle" | "loading" | "error";
 
-const PICKUP_SLOTS = [
-  "00:00", "01:00", "02:00", "03:00", "04:00", "05:00",
-  "06:00", "07:00", "08:00", "09:00", "10:00", "11:00",
-  "12:00", "13:00", "13:30", "14:00", "14:30", "15:00", "15:30",
-  "16:00", "17:00", "18:00", "19:00",
-  "20:00", "20:30", "21:00", "21:30", "22:00", "22:30",
-  "23:00", "23:30", "23:59",
+// 营业时段（每天相同）：13:00–16:30 / 20:00–23:30
+const OPENING_HOURS: ReadonlyArray<readonly [string, string]> = [
+  ["13:00", "16:30"],
+  ["20:00", "23:30"],
 ];
+const PICKUP_INTERVAL_MIN = 15;
+const PICKUP_BUFFER_MIN = 30; // 厨房准备时间，最早可取餐 = 当前 + 30min
+
+const toMinutes = (hm: string) => {
+  const [h, m] = hm.split(":").map(Number);
+  return h * 60 + m;
+};
+const fromMinutes = (mins: number) => {
+  const h = Math.floor(mins / 60);
+  const m = mins % 60;
+  return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
+};
+
+type PickupSlots = { lunch: string[]; dinner: string[] };
+
+const buildPickupSlots = (nowMinutes: number): PickupSlots => {
+  const earliest = nowMinutes + PICKUP_BUFFER_MIN;
+  const segment = (range: readonly [string, string]) => {
+    const start = toMinutes(range[0]);
+    const end = toMinutes(range[1]);
+    const slots: string[] = [];
+    for (let t = start; t <= end; t += PICKUP_INTERVAL_MIN) {
+      if (t >= earliest) slots.push(fromMinutes(t));
+    }
+    return slots;
+  };
+  return {
+    lunch: segment(OPENING_HOURS[0]),
+    dinner: segment(OPENING_HOURS[1]),
+  };
+};
 
 const CART_STORAGE_KEY = "sushi-maydo-cart";
 
 export default function PedidoContent({ categories, items, setMeals }: Props) {
   const t = useTranslations("Pedido");
+  const tFooter = useTranslations("Footer");
   const locale = useLocale();
   const router = useRouter();
   const [activeSection, setActiveSection] = useState<Section>("all");
@@ -131,12 +161,8 @@ export default function PedidoContent({ categories, items, setMeals }: Props) {
     return () => clearInterval(timer);
   }, []);
 
-  const availableSlots = useMemo(() => {
-    return PICKUP_SLOTS.filter((slot) => {
-      const [h, m] = slot.split(":").map(Number);
-      return h * 60 + m > nowMinutes;
-    });
-  }, [nowMinutes]);
+  const pickupSlots = useMemo(() => buildPickupSlots(nowMinutes), [nowMinutes]);
+  const hasAnySlot = pickupSlots.lunch.length + pickupSlots.dinner.length > 0;
 
   // 套餐按 available_from/to 过滤当前可点的
   const availableSetMeals = useMemo(() => {
@@ -156,38 +182,45 @@ export default function PedidoContent({ categories, items, setMeals }: Props) {
   useEffect(() => {
     try {
       const saved = localStorage.getItem(CART_STORAGE_KEY);
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed)) {
-          const migrated: CartItem[] = parsed
-            .map((c: Record<string, unknown>): CartItem | null => {
-              if (c.kind === "setMeal" && typeof c.setMealId === "string") {
-                return {
-                  kind: "setMeal",
-                  lineId: (c.lineId as string) ?? newLineId(),
-                  setMealId: c.setMealId,
-                  setMealName: (c.setMealName as Record<string, string>) ?? {},
-                  unitPrice: Number(c.unitPrice ?? 0),
-                  selections: (c.selections as SetMealSelection[]) ?? [],
-                  quantity: Number(c.quantity ?? 1),
-                };
-              }
-              // 老版本没有 kind 字段，按普通菜品处理
-              if (typeof c.itemId !== "string") return null;
-              return {
-                kind: "item",
-                lineId: (c.lineId as string) ?? newLineId(),
-                itemId: c.itemId,
-                quantity: Number(c.quantity ?? 1),
-                optionsSelected: c.optionsSelected as SelectedOption[] | undefined,
-                priceModifier: Number(c.priceModifier ?? 0),
-              };
-            })
-            .filter((c): c is CartItem => c !== null);
-          setCart(migrated);
-        }
-      }
+      if (!saved) return;
+      const parsed = JSON.parse(saved);
+      if (!Array.isArray(parsed)) return;
+      const itemIds = new Set(items.map((i) => i.id));
+      const setMealIds = new Set(setMeals.map((sm) => sm.id));
+      const migrated: CartItem[] = parsed
+        .map((c: Record<string, unknown>): CartItem | null => {
+          if (c.kind === "setMeal" && typeof c.setMealId === "string") {
+            return {
+              kind: "setMeal",
+              lineId: (c.lineId as string) ?? newLineId(),
+              setMealId: c.setMealId,
+              setMealName: (c.setMealName as Record<string, string>) ?? {},
+              unitPrice: Number(c.unitPrice ?? 0),
+              selections: (c.selections as SetMealSelection[]) ?? [],
+              quantity: Number(c.quantity ?? 1),
+            };
+          }
+          // 老版本没有 kind 字段，按普通菜品处理
+          if (typeof c.itemId !== "string") return null;
+          return {
+            kind: "item",
+            lineId: (c.lineId as string) ?? newLineId(),
+            itemId: c.itemId,
+            quantity: Number(c.quantity ?? 1),
+            optionsSelected: c.optionsSelected as SelectedOption[] | undefined,
+            priceModifier: Number(c.priceModifier ?? 0),
+          };
+        })
+        // 剔除引用了已下架商品/套餐的行，避免显示"幽灵行"
+        .filter((c): c is CartItem => {
+          if (c === null) return false;
+          if (c.kind === "setMeal") return setMealIds.has(c.setMealId);
+          return itemIds.has(c.itemId);
+        });
+      setCart(migrated);
     } catch { /* ignore */ }
+    // 仅 mount 时跑一次：items/setMeals 来自 server props，会议间不会变
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -258,6 +291,8 @@ export default function PedidoContent({ categories, items, setMeals }: Props) {
     );
   };
 
+  const clearCart = () => setCart([]);
+
   const decrementPlainItem = (itemId: string) => {
     const line = cart.find(
       (c): c is RegularCartItem =>
@@ -304,17 +339,20 @@ export default function PedidoContent({ categories, items, setMeals }: Props) {
       .join(" · ");
   };
 
-  const getCartQuantity = (itemId: string) =>
-    cart.reduce(
-      (s, c) => (c.kind === "item" && c.itemId === itemId ? s + c.quantity : s),
-      0
-    );
+  // 一次性算出每个 itemId 的总数和 plain 行数，避免每张卡片都 reduce 一次
+  const cartQtyByItem = useMemo(() => {
+    const m: Record<string, { plain: number; total: number }> = {};
+    for (const c of cart) {
+      if (c.kind !== "item") continue;
+      const cur = (m[c.itemId] ??= { plain: 0, total: 0 });
+      cur.total += c.quantity;
+      if (!c.optionsSelected?.length) cur.plain += c.quantity;
+    }
+    return m;
+  }, [cart]);
 
-  const getPlainLineQty = (itemId: string) =>
-    cart.find(
-      (c): c is RegularCartItem =>
-        c.kind === "item" && c.itemId === itemId && !c.optionsSelected?.length
-    )?.quantity ?? 0;
+  const getCartQuantity = (itemId: string) => cartQtyByItem[itemId]?.total ?? 0;
+  const getPlainLineQty = (itemId: string) => cartQtyByItem[itemId]?.plain ?? 0;
 
   // Scroll active category button into view
   useEffect(() => {
@@ -324,8 +362,10 @@ export default function PedidoContent({ categories, items, setMeals }: Props) {
     }
   }, [activeCategory]);
 
-  // Auto-highlight category on scroll
+  // Auto-highlight category on scroll —— mobile sticky 顶部约 150px（tabs + cat nav），desktop 约 100px
   useEffect(() => {
+    const isMobile = typeof window !== "undefined" && window.innerWidth < 1024;
+    const rootMargin = isMobile ? "-180px 0px -55% 0px" : "-120px 0px -60% 0px";
     const observers: IntersectionObserver[] = [];
     visibleCategories.forEach(({ category }) => {
       const el = document.getElementById(`cat-${category.id}`);
@@ -334,13 +374,17 @@ export default function PedidoContent({ categories, items, setMeals }: Props) {
         ([entry]) => {
           if (entry.isIntersecting) setActiveCategory(category.id);
         },
-        { rootMargin: "-120px 0px -60% 0px", threshold: 0 }
+        { rootMargin, threshold: 0 }
       );
       observer.observe(el);
       observers.push(observer);
     });
     return () => observers.forEach((o) => o.disconnect());
   }, [visibleCategories]);
+
+  // 模态打开时锁 body scroll + ESC 关闭
+  useModalLock(showCheckout && orderStatus !== "loading", () => resetCheckout());
+  useModalLock(showMobileCart, () => setShowMobileCart(false));
 
   const finalTotal = Math.max(0, cartTotal - couponDiscount);
 
@@ -497,11 +541,13 @@ export default function PedidoContent({ categories, items, setMeals }: Props) {
             <div className="flex items-center gap-2 shrink-0">
               <button
                 onClick={() => updateLineQuantity(cartItem.lineId, -1)}
+                aria-label="decrease quantity"
                 className="w-7 h-7 border border-beige text-maroon font-body text-xs flex items-center justify-center cursor-pointer hover:border-maroon bg-transparent"
               >−</button>
               <span className="font-body text-[13px] text-maroon w-4 text-center">{cartItem.quantity}</span>
               <button
                 onClick={() => updateLineQuantity(cartItem.lineId, 1)}
+                aria-label="increase quantity"
                 className="w-7 h-7 border border-beige text-maroon font-body text-xs flex items-center justify-center cursor-pointer hover:border-maroon bg-transparent"
               >+</button>
             </div>
@@ -788,11 +834,13 @@ export default function PedidoContent({ categories, items, setMeals }: Props) {
                                   <div className="flex items-center justify-between border border-beige">
                                     <button
                                       onClick={() => decrementPlainItem(item.id)}
+                                      aria-label="decrease quantity"
                                       className="w-10 h-10 sm:w-8 sm:h-8 text-maroon font-body text-base sm:text-sm flex items-center justify-center cursor-pointer transition-colors hover:bg-beige/50 bg-transparent border-none"
                                     >−</button>
                                     <span className="font-body text-[15px] sm:text-[14px] text-maroon font-medium">{plainQty}</span>
                                     <button
                                       onClick={() => addToCart(item)}
+                                      aria-label="increase quantity"
                                       className="w-10 h-10 sm:w-8 sm:h-8 text-maroon font-body text-base sm:text-sm flex items-center justify-center cursor-pointer transition-colors hover:bg-beige/50 bg-transparent border-none"
                                     >+</button>
                                   </div>
@@ -825,9 +873,19 @@ export default function PedidoContent({ categories, items, setMeals }: Props) {
                   <div className="p-6 pb-4 border-b border-beige">
                     <div className="flex items-center justify-between">
                       <h3 className="text-[20px] font-light text-maroon">{t("cart")}</h3>
-                      {cartCount > 0 && (
-                        <span className="bg-maroon text-white font-body text-[11px] w-6 h-6 flex items-center justify-center">{cartCount}</span>
-                      )}
+                      <div className="flex items-center gap-3">
+                        {cart.length > 0 && (
+                          <button
+                            onClick={clearCart}
+                            className="font-body text-[11px] tracking-[1px] uppercase text-gray hover:text-maroon transition-colors cursor-pointer bg-transparent border-none"
+                          >
+                            {t("clearCart")}
+                          </button>
+                        )}
+                        {cartCount > 0 && (
+                          <span className="bg-maroon text-white font-body text-[11px] w-6 h-6 flex items-center justify-center">{cartCount}</span>
+                        )}
+                      </div>
                     </div>
                   </div>
 
@@ -927,10 +985,21 @@ export default function PedidoContent({ categories, items, setMeals }: Props) {
                 <div className="w-10 h-1 bg-beige rounded-full mx-auto mb-4" />
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-[20px] font-light text-maroon">{t("cart")}</h3>
-                  <button
-                    onClick={() => setShowMobileCart(false)}
-                    className="w-8 h-8 flex items-center justify-center text-gray hover:text-maroon cursor-pointer bg-transparent border-none text-xl"
-                  >×</button>
+                  <div className="flex items-center gap-3">
+                    {cart.length > 0 && (
+                      <button
+                        onClick={clearCart}
+                        className="font-body text-[11px] tracking-[1px] uppercase text-gray hover:text-maroon transition-colors cursor-pointer bg-transparent border-none"
+                      >
+                        {t("clearCart")}
+                      </button>
+                    )}
+                    <button
+                      onClick={() => setShowMobileCart(false)}
+                      aria-label="close"
+                      className="w-8 h-8 flex items-center justify-center text-gray hover:text-maroon cursor-pointer bg-transparent border-none text-xl"
+                    >×</button>
+                  </div>
                 </div>
 
                 <div className="space-y-3">
@@ -981,6 +1050,7 @@ export default function PedidoContent({ categories, items, setMeals }: Props) {
                 {orderStatus !== "loading" && (
                   <button
                     onClick={resetCheckout}
+                    aria-label="close"
                     className="absolute top-5 right-5 w-8 h-8 flex items-center justify-center text-gray hover:text-maroon transition-colors cursor-pointer bg-transparent border-none text-xl"
                   >×</button>
                 )}
@@ -999,6 +1069,22 @@ export default function PedidoContent({ categories, items, setMeals }: Props) {
                         <p className="font-body text-[14px] text-red-700 font-light">{t("orderErrorMsg")}</p>
                       </motion.div>
                     )}
+
+                    {/* 自提地点 */}
+                    <div className="mt-5 sm:mt-6 p-3 sm:p-4 bg-maroon/5 border border-maroon/20">
+                      <p className="font-body text-[10px] tracking-[2px] uppercase text-camel mb-2">
+                        {t("pickupAddressTitle")}
+                      </p>
+                      <p className="font-body text-[13px] text-maroon font-light leading-snug whitespace-pre-line mb-1.5">
+                        {tFooter("address")}
+                      </p>
+                      <a
+                        href={`tel:${tFooter("phone")}`}
+                        className="font-body text-[13px] text-camel no-underline hover:text-maroon transition-colors"
+                      >
+                        {tFooter("phone")}
+                      </a>
+                    </div>
 
                     <div className="my-5 sm:my-6 p-3 sm:p-4 bg-white border border-beige">
                       {cart.map((cartItem) => {
@@ -1095,28 +1181,47 @@ export default function PedidoContent({ categories, items, setMeals }: Props) {
                         <span className="text-red-500 ml-2 normal-case tracking-normal">*{t("required")}</span>
                       )}
                     </label>
-                    {availableSlots.length === 0 ? (
+                    {!hasAnySlot ? (
                       <p className="font-body text-[13px] text-gray font-light mb-6">{t("noSlotsAvailable")}</p>
                     ) : (
-                      <div className="grid grid-cols-3 sm:flex sm:flex-wrap gap-2 mb-6">
-                        {availableSlots.map((slot) => (
-                          <button
-                            key={slot}
-                            onClick={() => {
-                              setSelectedPickupTime(slot);
-                              setCheckoutErrors((e) => ({ ...e, pickupTime: false }));
-                            }}
-                            className={`px-3 sm:px-4 py-2 border text-[12px] sm:text-[13px] font-body cursor-pointer transition-all ${
-                              selectedPickupTime === slot
-                                ? "bg-maroon text-white border-maroon"
-                                : checkoutErrors.pickupTime
-                                  ? "border-red-300 text-maroon bg-transparent hover:border-maroon"
-                                  : "border-beige text-maroon bg-transparent hover:border-maroon"
-                            }`}
-                          >
-                            {slot}
-                          </button>
-                        ))}
+                      <div
+                        role="radiogroup"
+                        aria-label={t("pickupTime")}
+                        className="space-y-4 mb-6"
+                      >
+                        {(["lunch", "dinner"] as const).map((seg) => {
+                          const slots = pickupSlots[seg];
+                          if (slots.length === 0) return null;
+                          return (
+                            <div key={seg}>
+                              <p className="font-body text-[10px] tracking-[2px] uppercase text-camel mb-2">
+                                {seg === "lunch" ? t("pickupSlotLunch") : t("pickupSlotDinner")}
+                              </p>
+                              <div className="grid grid-cols-3 sm:flex sm:flex-wrap gap-2">
+                                {slots.map((slot) => (
+                                  <button
+                                    key={slot}
+                                    role="radio"
+                                    aria-checked={selectedPickupTime === slot}
+                                    onClick={() => {
+                                      setSelectedPickupTime(slot);
+                                      setCheckoutErrors((e) => ({ ...e, pickupTime: false }));
+                                    }}
+                                    className={`px-3 sm:px-4 py-2 border text-[12px] sm:text-[13px] font-body cursor-pointer transition-all ${
+                                      selectedPickupTime === slot
+                                        ? "bg-maroon text-white border-maroon"
+                                        : checkoutErrors.pickupTime
+                                          ? "border-red-300 text-maroon bg-transparent hover:border-maroon"
+                                          : "border-beige text-maroon bg-transparent hover:border-maroon"
+                                    }`}
+                                  >
+                                    {slot}
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+                          );
+                        })}
                       </div>
                     )}
 
@@ -1153,7 +1258,7 @@ export default function PedidoContent({ categories, items, setMeals }: Props) {
                       <textarea
                         value={checkoutNotes}
                         onChange={(e) => setCheckoutNotes(e.target.value)}
-                        rows={2}
+                        rows={3}
                         className="w-full py-3.5 sm:py-4 border-0 border-b border-beige bg-transparent font-body text-[15px] text-ink outline-none transition-colors focus:border-b-maroon placeholder:text-gray resize-none"
                         placeholder={t("orderNotes")}
                       />

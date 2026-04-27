@@ -9,6 +9,7 @@ import type {
   MenuItemData,
 } from "@/lib/menu-types";
 import { getLocalizedText } from "@/lib/menu-types";
+import { useModalLock } from "@/lib/use-modal-lock";
 
 export type SetMealSelection = {
   courseNumber: number;
@@ -47,6 +48,7 @@ export default function SetMealSelector({
   const [currentCourseIndex, setCurrentCourseIndex] = useState(0);
   // courseNumber -> menuItemId[]
   const [selections, setSelections] = useState<Record<number, string[]>>({});
+  useModalLock(true, onClose);
 
   const itemMap = useMemo(() => {
     const map: Record<string, MenuItemData> = {};
