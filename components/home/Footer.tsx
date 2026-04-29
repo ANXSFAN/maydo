@@ -8,9 +8,8 @@ import DiamondDivider from "@/components/ui/DiamondDivider";
 const socials = ["Instagram", "Facebook", "Google"];
 
 const pageLinks = [
-  { key: "menu", href: "/carta" },
+  { key: "menu", href: "/pedido" },
   { key: "reservations", href: "/reservas" },
-  { key: "order", href: "/pedido" },
   { key: "events", href: "/eventos" },
   { key: "gallery", href: "/galeria" },
   { key: "about", href: "/sobre" },

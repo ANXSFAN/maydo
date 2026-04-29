@@ -8,8 +8,7 @@ import Image from "next/image";
 
 const mainNav = [
   { key: "home", href: "/" },
-  { key: "menu", href: "/carta" },
-  { key: "order", href: "/pedido" },
+  { key: "menu", href: "/pedido" },
   { key: "reservations", href: "/reservas" },
   { key: "contact", href: "/contacto" },
 ] as const;

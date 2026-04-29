@@ -34,7 +34,7 @@ export default function MenuSection() {
           {ENTRIES.map((entry, i) => (
             <FadeIn key={entry.key} delay={i * 0.15}>
               <Link
-                href={`/carta?menu=${entry.key}`}
+                href={`/pedido?menu=${entry.key}`}
                 className="group block bg-white border border-beige transition-all duration-500 relative overflow-hidden hover:-translate-y-2 hover:shadow-[0_20px_60px_rgba(122,66,66,0.12)] no-underline"
               >
                 {/* Top accent line */}

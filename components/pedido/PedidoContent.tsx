@@ -18,7 +18,12 @@ type Props = {
   categories: MenuCategoryData[];
   items: MenuItemData[];
   setMeals: SetMealData[];
+  initialMealTime?: string;
 };
+
+function isMealTime(v: string | undefined): v is "lunch" | "dinner" {
+  return v === "lunch" || v === "dinner";
+}
 
 type RegularCartItem = {
   kind: "item";
@@ -53,14 +58,15 @@ type OrderStatus = "idle" | "loading" | "error";
 const CART_STORAGE_KEY = "sushi-maydo-cart";
 const SLOTS_DEFAULT_VISIBLE = 6; // 每段默认显示几个时段，超出收起
 
-export default function PedidoContent({ categories, items, setMeals }: Props) {
+export default function PedidoContent({ categories, items, setMeals, initialMealTime }: Props) {
   const t = useTranslations("Pedido");
   const tFooter = useTranslations("Footer");
   const locale = useLocale();
   const router = useRouter();
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
-  // 午/晚菜单切换入口 — 默认按当前小时预选；当前阶段只切换 UI，不过滤数据
+  // 午/晚菜单切换入口 — 优先用 URL ?menu= 参数；缺省按当前小时（≥17:00 选 dinner）。当前阶段仅切换 UI，不过滤数据
   const [mealTime, setMealTime] = useState<"lunch" | "dinner">(() => {
+    if (isMealTime(initialMealTime)) return initialMealTime;
     const h = new Date().getHours();
     return h >= 17 ? "dinner" : "lunch";
   });

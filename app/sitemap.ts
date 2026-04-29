@@ -5,8 +5,7 @@ const LOCALES = ["es", "en", "ca", "zh"];
 
 const PAGES = [
   { path: "", priority: 1, changeFrequency: "weekly" as const },
-  { path: "/carta", priority: 0.9, changeFrequency: "weekly" as const },
-  { path: "/pedido", priority: 0.8, changeFrequency: "weekly" as const },
+  { path: "/pedido", priority: 0.9, changeFrequency: "weekly" as const },
   { path: "/reservas", priority: 0.9, changeFrequency: "monthly" as const },
   { path: "/galeria", priority: 0.6, changeFrequency: "monthly" as const },
   { path: "/sobre", priority: 0.5, changeFrequency: "monthly" as const },

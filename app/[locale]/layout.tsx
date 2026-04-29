@@ -134,7 +134,7 @@ export default async function LocaleLayout({ children, params }: Props) {
       ratingValue: "4.5",
       reviewCount: "500",
     },
-    hasMenu: "https://sushimaydo.es/es/carta",
+    hasMenu: "https://sushimaydo.es/es/pedido",
     acceptsReservations: "https://sushimaydo.es/es/reservas",
   };
 

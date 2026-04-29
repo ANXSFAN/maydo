@@ -5,8 +5,13 @@ import PedidoContent from "@/components/pedido/PedidoContent";
 import { getMenuData } from "@/lib/menuService";
 import { getTranslations } from "next-intl/server";
 
-export default async function PedidoPage() {
+export default async function PedidoPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ menu?: string }>;
+}) {
   const t = await getTranslations("Pedido");
+  const { menu } = await searchParams;
   const { categories, items, setMeals } = await getMenuData();
 
   return (
@@ -18,7 +23,12 @@ export default async function PedidoPage() {
         desc={t("heroDesc")}
         kanji="注"
       />
-      <PedidoContent categories={categories} items={items} setMeals={setMeals} />
+      <PedidoContent
+        categories={categories}
+        items={items}
+        setMeals={setMeals}
+        initialMealTime={menu}
+      />
       <Footer />
     </>
   );
