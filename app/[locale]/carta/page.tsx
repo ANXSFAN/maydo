@@ -2,10 +2,15 @@ import Navbar from "@/components/home/Navbar";
 import Footer from "@/components/home/Footer";
 import PageHero from "@/components/ui/PageHero";
 import CartaContent from "@/components/carta/CartaContent";
-import { useTranslations } from "next-intl";
+import { getTranslations } from "next-intl/server";
 
-export default function CartaPage() {
-  const t = useTranslations("Carta");
+export default async function CartaPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ menu?: string }>;
+}) {
+  const t = await getTranslations("Carta");
+  const { menu } = await searchParams;
 
   return (
     <>
@@ -16,7 +21,7 @@ export default function CartaPage() {
         desc={t("heroDesc")}
         kanji="鮮"
       />
-      <CartaContent />
+      <CartaContent initialMenu={menu} />
       <Footer />
     </>
   );

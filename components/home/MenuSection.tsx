@@ -2,38 +2,17 @@
 
 import Image from "next/image";
 import { useTranslations } from "next-intl";
+import { Link } from "@/i18n/navigation";
 import FadeIn from "@/components/ui/FadeIn";
 import DiamondDivider from "@/components/ui/DiamondDivider";
 
-const FOOD_IMAGES = [
-  "/images/menu1.jpeg",
-  "/images/menu2.jpeg",
-  "/images/menu3.jpeg",
+const ENTRIES = [
+  { key: "lunch" as const, image: "/images/menu1.jpeg" },
+  { key: "dinner" as const, image: "/images/menu2.jpeg" },
 ];
 
 export default function MenuSection() {
   const t = useTranslations("Menu");
-
-  const items = [
-    {
-      title: t("item1Title"),
-      desc: t("item1Desc"),
-      price: t("item1Price"),
-      time: t("item1Time"),
-    },
-    {
-      title: t("item2Title"),
-      desc: t("item2Desc"),
-      price: t("item2Price"),
-      time: t("item2Time"),
-    },
-    {
-      title: t("item3Title"),
-      desc: t("item3Desc"),
-      price: t("item3Price"),
-      time: t("item3Time"),
-    },
-  ];
 
   return (
     <section id="menu" className="py-[clamp(80px,10vw,120px)] px-10 bg-white">
@@ -51,42 +30,42 @@ export default function MenuSection() {
           </p>
         </FadeIn>
 
-        <div className="grid grid-cols-3 gap-7 max-md:grid-cols-1">
-          {items.map((item, i) => (
-            <FadeIn key={i} delay={i * 0.15}>
-              <div className="group bg-white border border-beige transition-all duration-500 cursor-pointer relative overflow-hidden hover:-translate-y-2 hover:shadow-[0_20px_60px_rgba(122,66,66,0.12)]">
+        <div className="grid grid-cols-2 gap-7 max-md:grid-cols-1 max-w-[960px] mx-auto">
+          {ENTRIES.map((entry, i) => (
+            <FadeIn key={entry.key} delay={i * 0.15}>
+              <Link
+                href={`/carta?menu=${entry.key}`}
+                className="group block bg-white border border-beige transition-all duration-500 relative overflow-hidden hover:-translate-y-2 hover:shadow-[0_20px_60px_rgba(122,66,66,0.12)] no-underline"
+              >
                 {/* Top accent line */}
                 <div className="absolute top-0 left-0 w-full h-[3px] bg-camel scale-x-0 group-hover:scale-x-100 transition-transform duration-500 origin-left z-[2]" />
 
-                <div className="h-[220px] overflow-hidden relative">
+                <div className="h-[260px] overflow-hidden relative">
                   <Image
-                    src={FOOD_IMAGES[i]}
-                    alt={item.title}
+                    src={entry.image}
+                    alt={t(`${entry.key}Title`)}
                     fill
                     className="object-cover transition-transform duration-700 group-hover:scale-[1.08]"
-                    sizes="(max-width: 768px) 100vw, 400px"
+                    sizes="(max-width: 768px) 100vw, 480px"
                   />
                 </div>
 
-                <div className="py-8 px-7 pb-9">
-                  <div className="font-body text-[11px] text-camel tracking-[3px] mb-4">
-                    {item.time}
+                <div className="py-9 px-7 text-center">
+                  <div className="font-body text-[11px] text-camel tracking-[3px] uppercase mb-3">
+                    {t(`${entry.key}Time`)}
                   </div>
-                  <h3 className="text-[26px] font-normal text-maroon mb-3">
-                    {item.title}
+                  <h3 className="text-[28px] font-normal text-maroon mb-3">
+                    {t(`${entry.key}Title`)}
                   </h3>
-                  <p className="font-body text-sm text-gray leading-relaxed font-light mb-6">
-                    {item.desc}
+                  <p className="font-body text-sm text-gray leading-relaxed font-light mb-7 max-w-[340px] mx-auto">
+                    {t(`${entry.key}Desc`)}
                   </p>
-                  <div className="flex items-center justify-center gap-3">
-                    <div className="w-5 h-px bg-camel" />
-                    <span className="text-[28px] font-light text-maroon">
-                      {item.price}
-                    </span>
-                    <div className="w-5 h-px bg-camel" />
+                  <div className="inline-flex items-center gap-2 font-body text-[12px] tracking-[2px] uppercase text-maroon border-b border-camel/40 pb-1 group-hover:border-camel transition-colors">
+                    {t("cta")}
+                    <span className="transition-transform duration-300 group-hover:translate-x-1">→</span>
                   </div>
                 </div>
-              </div>
+              </Link>
             </FadeIn>
           ))}
         </div>

@@ -59,6 +59,11 @@ export default function PedidoContent({ categories, items, setMeals }: Props) {
   const locale = useLocale();
   const router = useRouter();
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
+  // 午/晚菜单切换入口 — 默认按当前小时预选；当前阶段只切换 UI，不过滤数据
+  const [mealTime, setMealTime] = useState<"lunch" | "dinner">(() => {
+    const h = new Date().getHours();
+    return h >= 17 ? "dinner" : "lunch";
+  });
   const [cart, setCart] = useState<CartItem[]>([]);
   const [showCheckout, setShowCheckout] = useState(false);
   const [showMobileCart, setShowMobileCart] = useState(false);
@@ -595,6 +600,43 @@ export default function PedidoContent({ categories, items, setMeals }: Props) {
                   ))}
                 </div>
               )}
+
+              {/* Meal time tabs — entry only, currently does not filter data */}
+              <div className="mb-6 sm:mb-8 max-w-[640px] mx-auto">
+                <div className="grid grid-cols-2 gap-2 sm:gap-3">
+                  {(["lunch", "dinner"] as const).map((m) => {
+                    const active = mealTime === m;
+                    const hours = m === "lunch" ? "13:00 – 16:30" : "20:30 – 23:30";
+                    return (
+                      <button
+                        key={m}
+                        onClick={() => setMealTime(m)}
+                        className={`relative overflow-hidden py-3 sm:py-4 px-4 sm:px-6 border transition-all duration-300 cursor-pointer text-left ${
+                          active
+                            ? "bg-maroon border-maroon text-white shadow-[0_8px_24px_rgba(122,66,66,0.18)]"
+                            : "bg-white border-beige text-maroon hover:border-camel hover:-translate-y-0.5"
+                        }`}
+                      >
+                        <div
+                          className={`absolute top-0 left-0 h-[2px] w-full bg-camel transition-transform duration-300 origin-left ${
+                            active ? "scale-x-100" : "scale-x-0"
+                          }`}
+                        />
+                        <div
+                          className={`font-body text-[10px] sm:text-[11px] tracking-[2px] uppercase mb-0.5 sm:mb-1 ${
+                            active ? "text-white/70" : "text-camel"
+                          }`}
+                        >
+                          {hours}
+                        </div>
+                        <div className="text-[16px] sm:text-[20px] font-light">
+                          {t(m === "lunch" ? "mealLunch" : "mealDinner")}
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
 
               {/* Set meals hero — always at top */}
               {availableSetMeals.length > 0 && (

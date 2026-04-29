@@ -11,6 +11,10 @@ type MenuType = "lunch" | "dinner" | "daily";
 
 const MENU_TYPES: MenuType[] = ["lunch", "dinner", "daily"];
 
+function isMenuType(v: string | undefined): v is MenuType {
+  return v === "lunch" || v === "dinner" || v === "daily";
+}
+
 const SUSHI_CATEGORIES = [
   "tartar",
   "ensaladas",
@@ -47,9 +51,11 @@ const GALLERY_IMAGES = [
   "/images/gallery-3.jpg",
 ];
 
-export default function CartaContent() {
+export default function CartaContent({ initialMenu }: { initialMenu?: string }) {
   const t = useTranslations("Carta");
-  const [activeMenu, setActiveMenu] = useState<MenuType>("lunch");
+  const [activeMenu, setActiveMenu] = useState<MenuType>(
+    isMenuType(initialMenu) ? initialMenu : "lunch"
+  );
 
   return (
     <section className="bg-cream">
