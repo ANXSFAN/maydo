@@ -41,3 +41,8 @@ yarn-error.log*
 next-env.d.ts
 
 /lib/generated/prisma
+
+# local working files (备份、临时参考、误传测试件)
+*.bak
+/temp_ref/
+/prueba.pdf
