@@ -54,7 +54,7 @@ export default function GoogleReviews() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.1 }}
-                className="bg-white border border-beige p-6 flex flex-col"
+                className="bg-night-card border border-beige p-6 flex flex-col"
               >
                 <Stars rating={5} />
                 <p className="font-body text-sm text-ink/70 leading-7 mt-3 flex-1">

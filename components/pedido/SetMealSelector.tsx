@@ -31,6 +31,8 @@ type Props = {
   items: MenuItemData[];
   onClose: () => void;
   onConfirm: (result: SetMealResult) => void;
+  /** 若为 true，每个 course 必须选满 maxChoices 才能进入下一步 */
+  enforceMaxChoices?: boolean;
 };
 
 const formatPrice = (p: number) => `${p.toFixed(2).replace(".", ",")}€`;
@@ -40,6 +42,7 @@ export default function SetMealSelector({
   items,
   onClose,
   onConfirm,
+  enforceMaxChoices = false,
 }: Props) {
   const t = useTranslations("Pedido");
   const locale = useLocale();
@@ -102,7 +105,11 @@ export default function SetMealSelector({
   const atMax =
     !!currentCourse && currentSelections.length >= currentCourse.maxChoices;
 
-  const canGoNext = currentCourse && currentSelections.length > 0;
+  const canGoNext =
+    !!currentCourse &&
+    (enforceMaxChoices
+      ? currentSelections.length === currentCourse.maxChoices
+      : currentSelections.length > 0);
 
   const handleNext = () => {
     if (currentCourseIndex < setMeal.courses.length - 1) {

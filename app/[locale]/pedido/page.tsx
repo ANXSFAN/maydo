@@ -8,11 +8,12 @@ import { getTranslations } from "next-intl/server";
 export default async function PedidoPage({
   searchParams,
 }: {
-  searchParams: Promise<{ menu?: string }>;
+  searchParams: Promise<{ menu?: string; flow?: string }>;
 }) {
   const t = await getTranslations("Pedido");
-  const { menu } = await searchParams;
+  const { menu, flow } = await searchParams;
   const { categories, items, setMeals } = await getMenuData();
+  const initialFlow = flow === "buffet" ? "buffet" : "single";
 
   return (
     <>
@@ -28,6 +29,7 @@ export default async function PedidoPage({
         items={items}
         setMeals={setMeals}
         initialMealTime={menu}
+        initialFlow={initialFlow}
       />
       <Footer />
     </>

@@ -11,7 +11,7 @@ export default function Reservation() {
   const t = useTranslations("Reserve");
 
   return (
-    <section id="reserve" className="py-[clamp(80px,12vw,160px)] px-10 bg-white">
+    <section id="reserve" className="py-[clamp(80px,12vw,160px)] px-10 bg-cream">
       <div className="max-w-[1200px] mx-auto">
         <div className="flex gap-[60px] items-stretch max-md:flex-col">
           {/* Image */}
@@ -41,7 +41,7 @@ export default function Reservation() {
               {t("desc")}
             </p>
 
-            <div className="bg-cream p-[clamp(24px,4vw,48px)] border border-beige">
+            <div className="bg-night-card p-[clamp(24px,4vw,48px)] border border-beige">
               <div className="grid grid-cols-2 gap-x-[30px] gap-y-0">
                 <div className="col-span-2">
                   <input

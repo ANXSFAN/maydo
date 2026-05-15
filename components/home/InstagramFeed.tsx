@@ -24,7 +24,7 @@ export default function InstagramFeed() {
   if (!ELFSIGHT_APP_ID) return null;
 
   return (
-    <section className="bg-white py-[clamp(80px,12vw,160px)] px-5 sm:px-10">
+    <section className="bg-cream py-[clamp(80px,12vw,160px)] px-5 sm:px-10">
       <div className="max-w-[1200px] mx-auto">
         <FadeIn>
           <div className="text-center mb-14">

@@ -1,15 +1,30 @@
 @import "tailwindcss";
 
 @theme {
+  /* Brand palette */
   --color-maroon: #7A4242;
   --color-maroon-dark: #5C2E2E;
   --color-maroon-light: #8A5252;
   --color-camel: #C9A87C;
   --color-camel-light: #D4B896;
-  --color-cream: #FAF7F4;
-  --color-beige: #E0D5CE;
-  --color-ink: #1A1A1A;
-  --color-gray: #8A8A8A;
+
+  /* 2026-05 黑底改造：cream/beige/ink/gray 重新映射为深色系，
+     让 bg-cream / border-beige / text-ink / text-gray 自动适配黑底
+     （客户反馈：网站底色 → 黑色） */
+  --color-cream: #141414;          /* 原 #FAF7F4 浅米 → 深色 section 背景 */
+  --color-beige: #2A2A2A;          /* 原 #E0D5CE 米色 → 深色边框 */
+  --color-ink: #F0EBE3;            /* 原 #1A1A1A 暗文字 → 黑底主文字（暖米） */
+  --color-gray: #9C948C;           /* 原 #8A8A8A 中灰 → 黑底次级文字 */
+
+  /* Dark theme palette — 客户反馈黑底改造 (2026-05) */
+  --color-night: #0A0A0A;          /* body / 主背景 */
+  --color-night-soft: #141414;     /* section / 卡片背景 */
+  --color-night-card: #1A1A1A;     /* 小卡片 / 高亮块 */
+  --color-night-border: #2A2A2A;   /* 深色边框 */
+  --color-night-border-strong: #3A3A3A;
+  --color-night-text: #F0EBE3;     /* 黑底主文字（暖米） */
+  --color-night-text-dim: #B8B0A8; /* 次级文字 */
+  --color-night-text-muted: #6B655F; /* 弱化文字 */
 
   --font-heading: var(--font-cormorant), Georgia, serif;
   --font-body: var(--font-zen-kaku), sans-serif;
@@ -26,6 +41,7 @@
 @layer base {
   html {
     scroll-behavior: smooth;
+    background: #0A0A0A;
   }
 
   ::selection {
@@ -34,8 +50,8 @@
   }
 
   body {
-    background: #FAF7F4;
-    color: #1A1A1A;
+    background: #0A0A0A;
+    color: #F0EBE3;
     font-family: var(--font-heading);
     overflow-x: hidden;
   }

@@ -7,18 +7,22 @@ import { useRouter } from "@/i18n/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import DiamondDivider from "@/components/ui/DiamondDivider";
 import type { MenuCategoryData, MenuItemData, SetMealData } from "@/lib/menu-types";
-import { getLocalizedText, isSetMealAvailableAt } from "@/lib/menu-types";
+import { getLocalizedText } from "@/lib/menu-types";
 import AllergenBadges from "@/components/ui/AllergenBadges";
 import MenuItemOptionsModal, { type SelectedOption } from "@/components/pedido/MenuItemOptionsModal";
 import SetMealSelector, { type SetMealResult, type SetMealSelection } from "@/components/pedido/SetMealSelector";
+import BuffetFlow from "@/components/pedido/BuffetFlow";
 import { useModalLock } from "@/lib/use-modal-lock";
 import { buildPickupSlots } from "@/lib/business-hours";
+
+type Flow = "single" | "buffet";
 
 type Props = {
   categories: MenuCategoryData[];
   items: MenuItemData[];
   setMeals: SetMealData[];
   initialMealTime?: string;
+  initialFlow?: Flow;
 };
 
 function isMealTime(v: string | undefined): v is "lunch" | "dinner" {
@@ -58,11 +62,49 @@ type OrderStatus = "idle" | "loading" | "error";
 const CART_STORAGE_KEY = "sushi-maydo-cart";
 const SLOTS_DEFAULT_VISIBLE = 6; // 每段默认显示几个时段，超出收起
 
-export default function PedidoContent({ categories, items, setMeals, initialMealTime }: Props) {
+// ── Menú del día 14,95 € (2026-05 硬编码) ────────────────────────────────────
+// 复用 SetMealSelector 流程：构造一个 SetMealData，主菜/饮料/咖啡 3 个 course。
+// 咖啡/茶不来自 Orderlix，注入两个虚拟 MenuItemData 给 selector 的 items 池。
+const DAILY_MENU_ID = "daily-menu-1495";
+const DAILY_MENU_PRICE = 14.95;
+const DAILY_HOT_BEV_CAT = "daily-hot-bev";
+const DAILY_HOT_BEV_ITEMS: MenuItemData[] = [
+  {
+    id: "daily-cafe",
+    categoryId: DAILY_HOT_BEV_CAT,
+    name: { es: "Café", ca: "Cafè", en: "Coffee", zh: "咖啡" },
+    description: null,
+    price: 0,
+    imageUrl: null,
+    allergens: [],
+    options: null,
+  },
+  {
+    id: "daily-te",
+    categoryId: DAILY_HOT_BEV_CAT,
+    name: { es: "Té", ca: "Te", en: "Tea", zh: "茶" },
+    description: null,
+    price: 0,
+    imageUrl: null,
+    allergens: [],
+    options: null,
+  },
+];
+// 套餐配的饮料 —— 只算软饮（refresco / agua / zumo 等）
+const SOFT_DRINK_CATEGORY_REGEX =
+  /refresc|refresco|soft|软饮|无酒精|sin\s*alcohol|sense\s*alcohol|agua|water|水|juice|zumo|suc|果汁|coca|cola|sprite|fanta|nestea|aquarius/i;
+
+// 套餐不能选的分类 —— 酒类、咖啡/茶（咖啡/茶通过虚拟 course 单独选）
+const NON_DISH_CATEGORY_REGEX =
+  /\b(wine|vino|vins|cerveza|cervesa|beer|sake|cocktail|c[oó]ctel|licor|alcohol|cava|champ|whisky|vodka|gin|ron|rum|tequila|brand|co[ñn]ac|cognac|caf[ée]s?|coffee|infusi|t[ée]s?)\b|啤酒|清酒|鸡尾酒|红酒|白酒|咖啡|茶/i;
+
+export default function PedidoContent({ categories, items, setMeals, initialMealTime, initialFlow }: Props) {
   const t = useTranslations("Pedido");
+  const tFlow = useTranslations("Flow");
   const tFooter = useTranslations("Footer");
   const locale = useLocale();
   const router = useRouter();
+  const [flow, setFlow] = useState<Flow>(initialFlow ?? "single");
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
   // 午/晚菜单切换入口 — 优先用 URL ?menu= 参数；缺省按当前小时（≥17:00 选 dinner）。当前阶段仅切换 UI，不过滤数据
   const [mealTime, setMealTime] = useState<"lunch" | "dinner">(() => {
@@ -108,6 +150,79 @@ export default function PedidoContent({ categories, items, setMeals, initialMeal
 
   const visibleCategories = categoriesWithItems;
 
+  // ---- Menú del día — 把可见分类分成"软饮池 / 菜池"，构造硬编码 SetMealData ----
+  // 菜池 = 常规菜品 + 甜品（排除：软饮归 drink course / 酒类、咖啡茶完全不能当菜选）
+  const dailyMenuData = useMemo<SetMealData | null>(() => {
+    if (visibleCategories.length === 0) return null;
+    const drinkIds: string[] = [];
+    const dishIds: string[] = [];
+    for (const { category } of visibleCategories) {
+      const namePool = Object.values(category.name).join(" ");
+      if (SOFT_DRINK_CATEGORY_REGEX.test(namePool)) drinkIds.push(category.id);
+      else if (NON_DISH_CATEGORY_REGEX.test(namePool)) continue; // 酒/咖啡/茶 → 排除
+      else dishIds.push(category.id);
+    }
+    if (dishIds.length === 0) return null;
+    return {
+      id: DAILY_MENU_ID,
+      name: {
+        es: "Menú del día",
+        ca: "Menú del dia",
+        en: "Daily set menu",
+        zh: "每日套餐",
+      },
+      price: DAILY_MENU_PRICE,
+      courses: [
+        {
+          courseNumber: 1,
+          label: {
+            es: "5 platos a elegir",
+            ca: "5 plats a triar",
+            en: "Pick 5 dishes",
+            zh: "选 5 道菜",
+          },
+          categoryIds: dishIds,
+          maxChoices: 5,
+        },
+        ...(drinkIds.length > 0
+          ? [
+              {
+                courseNumber: 2,
+                label: {
+                  es: "Bebida",
+                  ca: "Beguda",
+                  en: "Drink",
+                  zh: "饮料",
+                },
+                categoryIds: drinkIds,
+                maxChoices: 1,
+              },
+            ]
+          : []),
+        {
+          courseNumber: drinkIds.length > 0 ? 3 : 2,
+          label: {
+            es: "Café o té",
+            ca: "Cafè o te",
+            en: "Coffee or tea",
+            zh: "咖啡或茶",
+          },
+          categoryIds: [DAILY_HOT_BEV_CAT],
+          maxChoices: 1,
+        },
+      ],
+      availableFrom: null,
+      availableTo: null,
+      sortOrder: 0,
+    };
+  }, [visibleCategories]);
+
+  // SetMealSelector 内部用 items 做白名单/itemMap，需要把虚拟咖啡/茶注入
+  const itemsWithDailyExtras = useMemo(
+    () => [...items, ...DAILY_HOT_BEV_ITEMS],
+    [items]
+  );
+
   // ---- Time slot filtering ----
   const [now, setNow] = useState(() => new Date());
 
@@ -121,11 +236,8 @@ export default function PedidoContent({ categories, items, setMeals, initialMeal
   const [showAllLunch, setShowAllLunch] = useState(false);
   const [showAllDinner, setShowAllDinner] = useState(false);
 
-  // 套餐按 available_from/to 过滤当前可点的
-  const availableSetMeals = useMemo(
-    () => setMeals.filter((sm) => isSetMealAvailableAt(sm, now)),
-    [setMeals, now]
-  );
+  // 套餐数据 (setMeals) 仍从 Orderlix 拉取并保留 SetMealSelector 组件，
+  // 但前端 hero 入口已移除 (2026-05 反馈)。Orderlix 后续推新套餐时再恢复入口。
 
   // ---- Cart helpers ----
   useEffect(() => {
@@ -466,7 +578,7 @@ export default function PedidoContent({ categories, items, setMeals, initialMeal
       return (
         <div
           key={`${prefix}-${cartItem.lineId}`}
-          className={`${compact ? "bg-white border border-beige p-3" : ""}`}
+          className={`${compact ? "bg-cream border border-beige p-3" : ""}`}
         >
           <div className="flex items-start gap-3">
             <div className={`${compact ? "w-12 h-12" : "w-10 h-10"} shrink-0 bg-maroon/10 border border-maroon/20 flex items-center justify-center`}>
@@ -517,7 +629,7 @@ export default function PedidoContent({ categories, items, setMeals, initialMeal
     return (
       <div
         key={`${prefix}-${cartItem.lineId}`}
-        className={`flex items-center gap-3 ${compact ? "bg-white border border-beige p-3" : ""}`}
+        className={`flex items-center gap-3 ${compact ? "bg-cream border border-beige p-3" : ""}`}
       >
         {item.imageUrl && (
           <div className={`${imgSize} shrink-0 relative overflow-hidden bg-white`}>
@@ -553,8 +665,42 @@ export default function PedidoContent({ categories, items, setMeals, initialMeal
 
   return (
     <>
+      {/* Flow A/B switcher — sticky 顶部，覆盖 navbar 下方 */}
+      <div className="sticky top-[60px] sm:top-[70px] z-40 bg-night/95 backdrop-blur-md border-b border-night-border">
+        <div className="max-w-[1200px] mx-auto px-3 sm:px-10 py-2.5 sm:py-3 flex gap-2 sm:gap-3">
+          {(["single", "buffet"] as const).map((key) => {
+            const active = flow === key;
+            return (
+              <button
+                key={key}
+                onClick={() => setFlow(key)}
+                aria-pressed={active}
+                className={`flex-1 px-3 sm:px-5 py-2 sm:py-2.5 border transition-all duration-300 cursor-pointer text-left ${
+                  active
+                    ? "bg-camel text-night border-camel shadow-[0_4px_18px_rgba(201,168,124,0.18)]"
+                    : "bg-transparent text-night-text-dim border-night-border hover:border-camel hover:text-night-text"
+                }`}
+              >
+                <div className="font-body text-[11px] sm:text-[13px] font-medium tracking-[1.5px] uppercase">
+                  {tFlow(`${key}Title`)}
+                </div>
+                <div className={`font-body text-[9px] sm:text-[10px] mt-0.5 line-clamp-1 ${active ? "text-night/70" : "opacity-70"}`}>
+                  {tFlow(`${key}Desc`)}
+                </div>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {flow === "buffet" ? (
+        <section className="py-[clamp(40px,8vw,100px)] px-[clamp(12px,4vw,40px)] bg-night min-h-[60vh]">
+          <BuffetFlow />
+        </section>
+      ) : (
+      <>
       {/* Sticky category nav for mobile */}
-      <div className="lg:hidden sticky top-[60px] z-40 bg-cream/95 backdrop-blur-md border-b border-beige/50">
+      <div className="lg:hidden sticky top-[120px] z-30 bg-night/95 backdrop-blur-md border-b border-night-border">
         {visibleCategories.length > 0 && (
           <div ref={catNavRef} className="flex gap-2 px-3 py-2 overflow-x-auto scrollbar-hide">
             {visibleCategories.map(({ category }) => (
@@ -570,7 +716,7 @@ export default function PedidoContent({ categories, items, setMeals, initialMeal
                 className={`px-3 py-1.5 text-[11px] tracking-[0.5px] font-body font-light border transition-all duration-200 cursor-pointer whitespace-nowrap shrink-0 ${
                   activeCategory === category.id
                     ? "bg-camel text-white border-camel"
-                    : "bg-white text-gray border-beige active:border-camel"
+                    : "bg-cream text-gray border-beige active:border-camel"
                 }`}
               >
                 {getLocalizedText(category.name, locale)}
@@ -598,7 +744,7 @@ export default function PedidoContent({ categories, items, setMeals, initialMeal
                       className={`px-3 py-1.5 text-[11px] tracking-[1px] font-body font-light border transition-all duration-200 cursor-pointer whitespace-nowrap ${
                         activeCategory === category.id
                           ? "bg-camel text-white border-camel"
-                          : "bg-white text-gray border-beige hover:border-camel hover:text-camel"
+                          : "bg-cream text-gray border-beige hover:border-camel hover:text-camel"
                       }`}
                     >
                       {getLocalizedText(category.name, locale)}
@@ -620,7 +766,7 @@ export default function PedidoContent({ categories, items, setMeals, initialMeal
                         className={`relative overflow-hidden py-3 sm:py-4 px-4 sm:px-6 border transition-all duration-300 cursor-pointer text-left ${
                           active
                             ? "bg-maroon border-maroon text-white shadow-[0_8px_24px_rgba(122,66,66,0.18)]"
-                            : "bg-white border-beige text-maroon hover:border-camel hover:-translate-y-0.5"
+                            : "bg-cream border-beige text-maroon hover:border-camel hover:-translate-y-0.5"
                         }`}
                       >
                         <div
@@ -644,72 +790,62 @@ export default function PedidoContent({ categories, items, setMeals, initialMeal
                 </div>
               </div>
 
-              {/* Set meals hero — always at top */}
-              {availableSetMeals.length > 0 && (
-                <div className="mb-8 sm:mb-10">
-                  <div className="flex items-baseline gap-3 mb-4">
-                    <h3 className="text-[18px] sm:text-[22px] font-light text-maroon whitespace-nowrap">
-                      {t("setMealsHeroTitle")}
-                    </h3>
-                    <div className="flex-1 h-px bg-camel/40" />
-                    <span className="font-body text-[10px] sm:text-[11px] text-camel tracking-[1px] uppercase">
-                      {availableSetMeals.length} {t("items")}
-                    </span>
-                  </div>
+              {/* Set meals hero 已移除 (2026-05) — 数据仍从 Orderlix set_meal 拉取，
+                  SetMealSelector 组件保留以备未来重新接入。当前不在前端强推入口。 */}
 
-                  <div className="flex gap-3 sm:gap-4 overflow-x-auto scrollbar-hide snap-x snap-mandatory -mx-[clamp(12px,4vw,40px)] px-[clamp(12px,4vw,40px)] pb-2">
-                    {availableSetMeals.map((sm) => {
-                      const smName = getLocalizedText(sm.name, locale);
-                      return (
-                        <div
-                          key={sm.id}
-                          className="snap-start shrink-0 w-[78%] sm:w-[340px] bg-gradient-to-br from-maroon to-maroon-dark text-white p-5 sm:p-6 flex flex-col"
-                        >
-                          <p className="font-body text-[10px] tracking-[2px] uppercase text-camel-light/90 mb-1">
-                            {t("setMealTagline")}
-                          </p>
-                          <h4 className="text-[20px] sm:text-[22px] font-light leading-snug mb-2">
-                            {smName}
-                          </h4>
-
-                          <div className="flex flex-wrap gap-x-3 gap-y-0.5 font-body text-[11px] text-white/70 mb-3">
-                            <span>{t("setMealCoursesCount", { count: sm.courses.length })}</span>
-                            {sm.availableFrom && sm.availableTo && (
-                              <span>· {sm.availableFrom}–{sm.availableTo}</span>
-                            )}
-                          </div>
-
-                          {sm.courses.length > 0 && (
-                            <ul className="mb-4 space-y-1 flex-1">
-                              {sm.courses.map((course) => (
-                                <li
-                                  key={course.courseNumber}
-                                  className="font-body text-[12px] text-white/85 flex items-baseline gap-2 leading-snug"
-                                >
-                                  <span className="w-1 h-1 bg-camel-light rounded-full shrink-0 translate-y-[-2px]" />
-                                  <span className="line-clamp-1">{getLocalizedText(course.label, locale)}</span>
-                                </li>
-                              ))}
-                            </ul>
-                          )}
-
-                          <div className="flex items-center justify-between gap-3 mt-auto pt-3 border-t border-white/15">
-                            <span className="text-[24px] sm:text-[26px] font-light">
-                              {formatPrice(sm.price)}
-                            </span>
-                            <button
-                              onClick={() => setSelectedSetMeal(sm)}
-                              className="h-10 px-5 bg-white text-maroon font-body text-[11px] tracking-[2px] uppercase border-none cursor-pointer transition-all duration-300 hover:bg-cream active:scale-[0.97]"
-                            >
-                              {t("setMealChoose")}
-                            </button>
-                          </div>
+              {/* Daily set menu — 硬编码静态卡 (2026-05)
+                  价格 14.95 € 仅限堂食；外带价待商家确认。等定价稳定可不动；
+                  若 Orderlix 后端接入新套餐结构再换回 SetMealSelector */}
+              <div className="mb-8 sm:mb-10">
+                <div className="relative overflow-hidden bg-maroon text-white border border-maroon shadow-[0_12px_32px_rgba(122,66,66,0.18)]">
+                  <div className="absolute top-0 left-0 h-[3px] w-full bg-camel" />
+                  <div className="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-6 sm:gap-10 items-center p-6 sm:p-10">
+                    <div className="min-w-0">
+                      <p className="font-body text-[10px] sm:text-[11px] tracking-[3px] uppercase text-camel mb-2">
+                        {t("dailyMenuLabel")}
+                      </p>
+                      <h3 className="text-[22px] sm:text-[28px] font-light leading-tight mb-3">
+                        {t("dailyMenuTitle")}
+                      </h3>
+                      <p className="font-body text-[13px] sm:text-[14px] text-white/75 font-light leading-relaxed max-w-[480px] mb-5">
+                        {t("dailyMenuDesc")}
+                      </p>
+                      <div className="flex flex-wrap gap-2">
+                        <span className="inline-flex items-center gap-1.5 px-3 py-1 border border-camel/50 text-camel font-body text-[10px] sm:text-[11px] tracking-[1.5px] uppercase">
+                          <svg className="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                            <polyline points="20 6 9 17 4 12" />
+                          </svg>
+                          {t("dailyMenuDineIn")}
+                        </span>
+                        <span className="inline-flex items-center gap-1.5 px-3 py-1 border border-white/20 text-white/60 font-body text-[10px] sm:text-[11px] tracking-[1.5px] uppercase">
+                          {t("dailyMenuTakeaway")}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="flex md:flex-col items-center md:items-end justify-between md:justify-center gap-4 md:gap-5 md:text-right md:border-l md:border-white/10 md:pl-10">
+                      <div>
+                        <div className="font-display text-[40px] sm:text-[52px] leading-none text-camel font-light">
+                          14,95<span className="text-[22px] sm:text-[28px] align-top ml-1">€</span>
                         </div>
-                      );
-                    })}
+                        <p className="font-body text-[10px] tracking-[2px] uppercase text-white/50 mt-2">
+                          {t("dailyMenuDineIn")}
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (dailyMenuData) setSelectedSetMeal(dailyMenuData);
+                        }}
+                        disabled={!dailyMenuData}
+                        className="inline-flex items-center gap-2 px-5 py-2.5 bg-camel text-night hover:bg-camel/90 border border-camel font-body text-[11px] tracking-[2px] uppercase cursor-pointer transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {t("dailyMenuCta")}
+                        <span>→</span>
+                      </button>
+                    </div>
                   </div>
                 </div>
-              )}
+              </div>
 
               {/* Category sections */}
               <div className="space-y-8 sm:space-y-10">
@@ -735,7 +871,7 @@ export default function PedidoContent({ categories, items, setMeals, initialMeal
                         return (
                           <div
                             key={item.id}
-                            className="group bg-white border border-beige transition-all duration-300 hover:shadow-[0_8px_30px_rgba(122,66,66,0.1)] overflow-hidden flex lg:flex-col"
+                            className="group bg-cream border border-beige transition-all duration-300 hover:shadow-[0_8px_30px_rgba(201,168,124,0.15)] overflow-hidden flex lg:flex-col"
                           >
                             {item.imageUrl ? (
                               <div className="relative shrink-0 w-24 sm:w-28 lg:w-full aspect-square overflow-hidden bg-white">
@@ -825,7 +961,7 @@ export default function PedidoContent({ categories, items, setMeals, initialMeal
             {/* Desktop cart sidebar */}
             <div className="w-[340px] shrink-0 max-lg:hidden">
               <div className="sticky top-[100px]">
-                <div className="bg-white border border-beige">
+                <div className="bg-cream border border-beige">
                   <div className="p-6 pb-4 border-b border-beige">
                     <div className="flex items-center justify-between">
                       <h3 className="text-[20px] font-light text-maroon">{t("cart")}</h3>
@@ -884,7 +1020,7 @@ export default function PedidoContent({ categories, items, setMeals, initialMeal
             animate={{ y: 0 }}
             exit={{ y: 100 }}
             transition={{ type: "spring", damping: 25, stiffness: 300 }}
-            className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-beige shadow-[0_-4px_20px_rgba(0,0,0,0.08)]"
+            className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-cream border-t border-beige shadow-[0_-4px_20px_rgba(0,0,0,0.4)]"
           >
             <div className="flex items-center gap-3 px-4 py-3">
               <button
@@ -1042,7 +1178,7 @@ export default function PedidoContent({ categories, items, setMeals, initialMeal
                       </a>
                     </div>
 
-                    <div className="my-5 sm:my-6 p-3 sm:p-4 bg-white border border-beige">
+                    <div className="my-5 sm:my-6 p-3 sm:p-4 bg-cream border border-beige">
                       {cart.map((cartItem) => {
                         if (cartItem.kind === "setMeal") {
                           return (
@@ -1274,10 +1410,13 @@ export default function PedidoContent({ categories, items, setMeals, initialMeal
       {selectedSetMeal && (
         <SetMealSelector
           setMeal={selectedSetMeal}
-          items={items}
+          items={selectedSetMeal.id === DAILY_MENU_ID ? itemsWithDailyExtras : items}
           onClose={() => setSelectedSetMeal(null)}
           onConfirm={addSetMealToCart}
+          enforceMaxChoices={selectedSetMeal.id === DAILY_MENU_ID}
         />
+      )}
+      </>
       )}
     </>
   );

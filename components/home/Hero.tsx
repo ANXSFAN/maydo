@@ -2,27 +2,34 @@
 
 import { motion } from "framer-motion";
 import { useTranslations } from "next-intl";
-import Image from "next/image";
 import DiamondDivider from "@/components/ui/DiamondDivider";
+import HeroCarousel from "@/components/home/HeroCarousel";
+
+// GAMMA 新拍 8 张精选 (2026-05)
+// 注：原图 ~50MB，部署前建议压缩为 webp/avif (目标单张 ≤ 400KB)
+// Next/Image 运行时会自动生成响应式尺寸，但源文件预压缩能加速 build
+const HERO_IMAGES = [
+  "/images/hero/hero-1-ambiente.jpg",      // 餐厅环境
+  "/images/hero/hero-2-chef-fuego.jpg",    // 厨师炒锅大火
+  "/images/hero/hero-3-sushi-sake.jpg",    // 寿司 + 清酒
+  "/images/hero/hero-4-mesa-sushi.jpg",    // 多盘寿司
+  "/images/hero/hero-5-llamas.jpg",        // 火焰特写
+  "/images/hero/hero-6-vino-plato.jpg",    // 红酒配菜
+  "/images/hero/hero-7-cocina.jpg",        // 后厨
+  "/images/hero/hero-8-papillote.jpg",     // 锡纸特色菜
+];
 
 export default function Hero() {
   const t = useTranslations("Hero");
 
   return (
     <section className="h-screen min-h-[700px] flex flex-col items-center justify-center text-center relative overflow-hidden">
-      {/* Background image */}
-      <Image
-        src="/images/hero-bg.avif"
-        alt="Sushi Maydo"
-        fill
-        priority
-        className="object-cover"
-      />
+      <HeroCarousel images={HERO_IMAGES} alt="Sushi Maydo" />
 
-      {/* Gradient overlays — blend image with brand color */}
-      <div className="absolute inset-0 bg-maroon-dark/40" />
-      <div className="absolute inset-0 bg-gradient-to-t from-maroon-dark/80 via-transparent to-maroon-dark/50" />
-      <div className="absolute inset-0 bg-gradient-to-r from-maroon-dark/30 via-transparent to-maroon-dark/30" />
+      {/* Gradient overlays — 黑底版本：加深背景对比 */}
+      <div className="absolute inset-0 bg-black/55 z-[1]" />
+      <div className="absolute inset-0 bg-gradient-to-t from-night via-transparent to-night/60 z-[1]" />
+      <div className="absolute inset-0 bg-gradient-to-r from-night/40 via-transparent to-night/40 z-[1]" />
 
       {/* Dot pattern */}
       <div

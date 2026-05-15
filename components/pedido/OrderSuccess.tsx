@@ -50,7 +50,7 @@ export default function OrderSuccess() {
           </h2>
           <DiamondDivider />
 
-          <div className="mt-6 p-6 bg-white border border-beige text-left space-y-3">
+          <div className="mt-6 p-6 bg-cream border border-beige text-left space-y-3">
             {orderId && (
               <div className="flex justify-between font-body text-[14px]">
                 <span className="text-gray">{t("orderNumberLabel")}</span>

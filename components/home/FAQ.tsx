@@ -13,7 +13,7 @@ export default function FAQ() {
   const [openIndex, setOpenIndex] = useState<number | null>(null);
 
   return (
-    <section className="bg-white py-[clamp(80px,12vw,160px)] px-5 sm:px-10">
+    <section className="bg-cream py-[clamp(80px,12vw,160px)] px-5 sm:px-10">
       <div className="max-w-[800px] mx-auto">
         <FadeIn>
           <div className="text-center mb-14">
