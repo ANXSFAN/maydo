@@ -1275,9 +1275,7 @@ export default function PedidoContent({ categories, items, setMeals, initialMeal
                     </label>
                     {!hasAnySlot ? (
                       <p className="font-body text-[13px] text-gray font-light mb-6">
-                        {pickupSlots.closedReason === "monday"
-                          ? t("closedMonday")
-                          : t("closedToday")}
+                        {t("closedToday")}
                       </p>
                     ) : (
                       <div
@@ -1383,9 +1381,7 @@ export default function PedidoContent({ categories, items, setMeals, initialMeal
                       {orderStatus === "loading"
                         ? t("submitting")
                         : !hasAnySlot
-                          ? pickupSlots.closedReason === "monday"
-                            ? t("closedMonday")
-                            : t("closedToday")
+                          ? t("closedToday")
                           : t("placeOrder")}
                     </button>
                     <p className="font-body text-xs text-gray text-center mt-3 font-light">{t("payAtStore")}</p>

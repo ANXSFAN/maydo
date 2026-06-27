@@ -74,7 +74,7 @@ const LANG = {
     },
     footer: {
       hours: "Horario",
-      hoursDetail: ["Martes a Domingo", "13:00 - 16:30", "20:30 - 23:30", "Lunes cerrado"],
+      hoursDetail: ["Todos los días", "13:00 - 16:30", "20:30 - 23:30", "Abierto todo el año"],
       contact: "Contacto",
       location: "Ubicación",
       address: "Pl. d'Europa, 102, 08902\nL'Hospitalet de Llobregat\nBarcelona",
@@ -128,7 +128,7 @@ const LANG = {
     },
     footer: {
       hours: "营业时间",
-      hoursDetail: ["周二至周日", "13:00 - 16:30", "20:30 - 23:30", "周一休息"],
+      hoursDetail: ["每天营业", "13:00 - 16:30", "20:30 - 23:30", "全年无休"],
       contact: "联系方式",
       location: "地址",
       address: "Pl. d'Europa, 102, 08902\nL'Hospitalet de Llobregat\n巴塞罗那",

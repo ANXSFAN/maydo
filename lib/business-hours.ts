@@ -9,10 +9,10 @@ type Segment = readonly [string, string];
 const LUNCH: Segment = ["13:00", "16:30"];
 const DINNER: Segment = ["20:30", "23:30"];
 
-// 周一闭店；周日仅午餐；周二-周六两段
+// 每天营业，全周两段（午餐 + 晚餐）
 const HOURS_BY_DAY: Record<number, readonly Segment[]> = {
-  0: [LUNCH],
-  1: [],
+  0: [LUNCH, DINNER],
+  1: [LUNCH, DINNER],
   2: [LUNCH, DINNER],
   3: [LUNCH, DINNER],
   4: [LUNCH, DINNER],
@@ -30,7 +30,7 @@ const fromMinutes = (mins: number) => {
   return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
 };
 
-export type ClosedReason = "monday" | "after_hours";
+export type ClosedReason = "after_hours";
 
 export type PickupSlots = {
   lunch: string[];
@@ -58,11 +58,7 @@ export function buildPickupSlots(now: Date): PickupSlots {
   const lunch = segment(todays[0]);
   const dinner = segment(todays[1]);
   const isClosed = lunch.length === 0 && dinner.length === 0;
-  const closedReason: ClosedReason | null = isClosed
-    ? day === 1
-      ? "monday"
-      : "after_hours"
-    : null;
+  const closedReason: ClosedReason | null = isClosed ? "after_hours" : null;
 
   return { lunch, dinner, isClosed, closedReason };
 }
