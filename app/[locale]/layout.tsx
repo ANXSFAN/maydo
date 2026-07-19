@@ -112,8 +112,8 @@ export default async function LocaleLayout({ children, params }: Props) {
     },
     geo: {
       "@type": "GeoCoordinates",
-      latitude: 41.369,
-      longitude: 2.125,
+      latitude: 41.3662,
+      longitude: 2.122,
     },
     openingHoursSpecification: [
       {
