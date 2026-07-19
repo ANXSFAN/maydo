@@ -258,7 +258,7 @@ async function notifyCustomerEmail(order: WebOrder) {
         <table style="width: 100%; border-collapse: collapse; margin-top: 16px;">
           <tr><td style="padding: 6px 0; color: #999; width: 130px;">${tr.orderLabel}</td><td style="padding: 6px 0;"><strong>${order.orderId}</strong></td></tr>
           <tr><td style="padding: 6px 0; color: #999;">${tr.pickupLabel}</td><td style="padding: 6px 0;"><strong>${order.pickupTime}</strong></td></tr>
-          <tr><td style="padding: 6px 0; color: #999;">${tr.addressLabel}</td><td style="padding: 6px 0;">Pl. d'Europa, 102<br/>08902 L'Hospitalet de Llobregat</td></tr>
+          <tr><td style="padding: 6px 0; color: #999;">${tr.addressLabel}</td><td style="padding: 6px 0;">Carrer Santa Eulàlia, 204<br/>08902 L'Hospitalet de Llobregat</td></tr>
         </table>
         <h3 style="color: #7A4242; font-weight: 400; margin-top: 24px; border-bottom: 1px solid #E0D5CE; padding-bottom: 8px;">${tr.itemsHeader}</h3>
         <table style="width: 100%; border-collapse: collapse;">

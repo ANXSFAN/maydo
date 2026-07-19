@@ -123,7 +123,7 @@ export async function POST(request: NextRequest) {
                 <p style="color: #666; font-size: 14px;">Tel: <a href="tel:+34936844036" style="color: #7A4242;">+34 936 844 036</a></p>
               </div>
               <p style="text-align: center; color: #999; font-size: 11px; margin-top: 20px;">
-                Pl. d'Europa, 102, 08902 L'Hospitalet de Llobregat, Barcelona
+                Carrer Santa Eulàlia, 204, 08902 L'Hospitalet de Llobregat, Barcelona
               </p>
             </div>
           `,

@@ -5,7 +5,7 @@ import FadeIn from "@/components/ui/FadeIn";
 import DiamondDivider from "@/components/ui/DiamondDivider";
 
 const GOOGLE_MAPS_EMBED =
-  "https://www.google.com/maps?q=Sushi+Maydo,Pl.+d'Europa+102,+L'Hospitalet+de+Llobregat,+Barcelona&output=embed&z=16";
+  "https://www.google.com/maps?q=Sushi+Maydo,Carrer+Santa+Eulàlia+204,+L'Hospitalet+de+Llobregat,+Barcelona&output=embed&z=16";
 
 const GOOGLE_MAPS_LINK =
   "https://www.google.com/maps/search/?api=1&query=Sushi+Maydo+L'Hospitalet+de+Llobregat+Barcelona";

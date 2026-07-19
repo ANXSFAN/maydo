@@ -104,7 +104,7 @@ export default async function LocaleLayout({ children, params }: Props) {
     priceRange: "€€",
     address: {
       "@type": "PostalAddress",
-      streetAddress: "Pl. d'Europa, 102",
+      streetAddress: "Carrer Santa Eulàlia, 204",
       addressLocality: "L'Hospitalet de Llobregat",
       addressRegion: "Barcelona",
       postalCode: "08902",
@@ -112,8 +112,8 @@ export default async function LocaleLayout({ children, params }: Props) {
     },
     geo: {
       "@type": "GeoCoordinates",
-      latitude: 41.3565,
-      longitude: 2.1275,
+      latitude: 41.369,
+      longitude: 2.125,
     },
     openingHoursSpecification: [
       {
