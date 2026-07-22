@@ -103,7 +103,7 @@
   "Reserve": {
     "sub": "Reservations",
     "title": "Book your table",
-    "desc": "Let us prepare the best experience for you. Choose your preferred date and time.",
+    "desc": "To book at our Santa Eulàlia restaurant, contact us directly by WhatsApp or phone.",
     "name": "Full name",
     "email": "Email address",
     "phone": "Phone number",
@@ -249,7 +249,7 @@
   "Reservas": {
     "sub": "Reservations",
     "title": "Book your table",
-    "heroDesc": "Let us prepare the finest dining experience for you. Select your preferred time.",
+    "heroDesc": "Book at our Santa Eulàlia restaurant by contacting us directly via WhatsApp or phone.",
     "selectPeriod": "Select service",
     "lunch": "Lunch",
     "lunchHours": "1:00 PM - 4:30 PM",
@@ -272,6 +272,7 @@
     "dinnerDays": "Every day",
     "closed": "Open all year",
     "contactTitle": "Direct contact",
+    "locationTitle": "Santa Eulàlia restaurant",
     "address": "Carrer Santa Eulàlia, 204, 08902\nL'Hospitalet de Llobregat",
     "successTitle": "Reservation sent!",
     "successMsg": "We have received your reservation. You will receive a confirmation email shortly.",
@@ -521,7 +522,7 @@
     "q1Question": "What are your opening hours?",
     "q1Answer": "We are open every day. Lunch from 1:00 PM to 4:30 PM and dinner from 8:30 PM to 11:30 PM.",
     "q2Question": "Do I need to make a reservation?",
-    "q2Answer": "We recommend booking, especially on Fridays, Saturdays and Sundays. You can reserve through our website or by calling +34 936 844 036.",
+    "q2Answer": "We recommend booking, especially on Fridays, Saturdays and Sundays. For now, you can book via WhatsApp or by calling +34 936 844 036.",
     "q3Question": "Is there parking nearby?",
     "q3Answer": "The streets around the restaurant have blue-zone (pay-and-display) street parking, payable at the meter or via the AMB Aparcament app. We are also about a 4-minute walk from the Santa Eulàlia metro station (L1).",
     "q4Question": "Do you have highchairs and a children's menu?",
@@ -553,6 +554,17 @@
     "vegetarian": "Vegetarian",
     "vegan": "Vegan",
     "spicy": "Spicy"
+  },
+  "ReservationContact": {
+    "eyebrow": "Direct booking",
+    "title": "How would you like to book?",
+    "description": "Our Santa Eulàlia team will confirm the date, time and number of guests with you.",
+    "whatsapp": "Book via WhatsApp",
+    "whatsappHint": "Message us and we will reply as soon as possible",
+    "phone": "Book by phone",
+    "notice": "Your booking is confirmed once our team replies to your message or call.",
+    "whatsappAria": "Open WhatsApp to book a table",
+    "phoneAria": "Call the restaurant to book a table"
   },
   "WhatsApp": {
     "label": "Contact us on WhatsApp",

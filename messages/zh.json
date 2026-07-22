@@ -103,7 +103,7 @@
   "Reserve": {
     "sub": "预订",
     "title": "预订您的座位",
-    "desc": "让我们为您准备最好的用餐体验。请选择您偏好的日期和时间。",
+    "desc": "如需预订 Santa Eulàlia 门店，请直接通过 WhatsApp 或电话联系我们。",
     "name": "您的姓名",
     "email": "电子邮箱",
     "phone": "联系电话",
@@ -249,7 +249,7 @@
   "Reservas": {
     "sub": "预订",
     "title": "预订座位",
-    "heroDesc": "让我们为您准备最好的用餐体验，请选择您偏好的时间。",
+    "heroDesc": "如需预订 Santa Eulàlia 门店，请直接通过 WhatsApp 或电话联系我们。",
     "selectPeriod": "选择用餐时段",
     "lunch": "午餐",
     "lunchHours": "13:00 - 16:30",
@@ -272,6 +272,7 @@
     "dinnerDays": "每天",
     "closed": "全年无休",
     "contactTitle": "直接联系",
+    "locationTitle": "Santa Eulàlia 门店",
     "address": "Carrer Santa Eulàlia, 204, 08902\nL'Hospitalet de Llobregat",
     "successTitle": "预订已提交！",
     "successMsg": "我们已收到您的预订，确认邮件将稍后发送至您的邮箱。",
@@ -521,7 +522,7 @@
     "q1Question": "营业时间是什么？",
     "q1Answer": "我们每天营业。午餐 13:00 - 16:30，晚餐 20:30 - 23:30。",
     "q2Question": "需要提前预订吗？",
-    "q2Answer": "建议提前预订，尤其是周五、周六和周日。您可以通过网站或致电 +34 936 844 036 预订。",
+    "q2Answer": "建议提前预订，尤其是周五、周六和周日。目前可通过 WhatsApp 或致电 +34 936 844 036 预订。",
     "q3Question": "附近有停车场吗？",
     "q3Answer": "餐厅周边街道设有蓝色区域（Zona Azul）计时收费车位，可在咪表或 AMB Aparcament App 缴费。此外，餐厅距离地铁 L1 线 Santa Eulàlia 站步行仅约 4 分钟。",
     "q4Question": "有儿童座椅和儿童菜单吗？",
@@ -553,6 +554,17 @@
     "vegetarian": "素食",
     "vegan": "纯素",
     "spicy": "辣"
+  },
+  "ReservationContact": {
+    "eyebrow": "直接预订",
+    "title": "请选择预订方式",
+    "description": "Santa Eulàlia 门店工作人员将与您确认日期、时间和用餐人数。",
+    "whatsapp": "通过 WhatsApp 预订",
+    "whatsappHint": "给我们留言，我们会尽快回复",
+    "phone": "电话预订",
+    "notice": "工作人员回复您的消息或接听电话并确认后，预订才正式生效。",
+    "whatsappAria": "打开 WhatsApp 预订座位",
+    "phoneAria": "致电餐厅预订座位"
   },
   "WhatsApp": {
     "label": "通过 WhatsApp 联系我们",

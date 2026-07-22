@@ -103,7 +103,7 @@
   "Reserve": {
     "sub": "Reservas",
     "title": "Reserve su mesa",
-    "desc": "Permítanos preparar la mejor experiencia para usted. Elija su fecha y horario preferido.",
+    "desc": "Para reservar en nuestro restaurante de Santa Eulàlia, contáctenos directamente por WhatsApp o por teléfono.",
     "name": "Nombre completo",
     "email": "Correo electrónico",
     "phone": "Teléfono",
@@ -249,7 +249,7 @@
   "Reservas": {
     "sub": "Reservas",
     "title": "Reserve su mesa",
-    "heroDesc": "Permítanos preparar la mejor experiencia gastronómica para usted. Seleccione su horario preferido.",
+    "heroDesc": "Reserve en nuestro restaurante de Santa Eulàlia contactándonos directamente por WhatsApp o por teléfono.",
     "selectPeriod": "Seleccione turno",
     "lunch": "Mediodía",
     "lunchHours": "13:00 - 16:30",
@@ -272,6 +272,7 @@
     "dinnerDays": "Todos los días",
     "closed": "Abierto todo el año",
     "contactTitle": "Contacto directo",
+    "locationTitle": "Restaurante Santa Eulàlia",
     "address": "Carrer Santa Eulàlia, 204, 08902\nL'Hospitalet de Llobregat",
     "successTitle": "¡Reserva enviada!",
     "successMsg": "Hemos recibido su reserva. Recibirá una confirmación por correo electrónico en breve.",
@@ -521,7 +522,7 @@
     "q1Question": "¿Cuál es el horario de apertura?",
     "q1Answer": "Abrimos todos los días. Mediodía de 13:00 a 16:30 y noche de 20:30 a 23:30.",
     "q2Question": "¿Es necesario reservar?",
-    "q2Answer": "Recomendamos reservar, especialmente los viernes, sábados y domingos. Puede reservar a través de nuestra web o llamando al +34 936 844 036.",
+    "q2Answer": "Recomendamos reservar, especialmente los viernes, sábados y domingos. Por el momento, puede reservar por WhatsApp o llamando al +34 936 844 036.",
     "q3Question": "¿Disponen de parking cercano?",
     "q3Answer": "En las calles cercanas al restaurante hay zona azul de aparcamiento de rotación, de pago en el parquímetro o con la app AMB Aparcament. Además, estamos a unos 4 minutos a pie de la estación de metro Santa Eulàlia (L1).",
     "q4Question": "¿Tienen tronas y menú infantil?",
@@ -553,6 +554,17 @@
     "vegetarian": "Vegetariano",
     "vegan": "Vegano",
     "spicy": "Picante"
+  },
+  "ReservationContact": {
+    "eyebrow": "Reserva directa",
+    "title": "¿Cómo desea reservar?",
+    "description": "Nuestro equipo de Santa Eulàlia confirmará con usted la fecha, la hora y el número de comensales.",
+    "whatsapp": "Reservar por WhatsApp",
+    "whatsappHint": "Escríbanos y le responderemos lo antes posible",
+    "phone": "Reservar por teléfono",
+    "notice": "La reserva quedará confirmada cuando nuestro equipo responda a su mensaje o llamada.",
+    "whatsappAria": "Abrir WhatsApp para reservar una mesa",
+    "phoneAria": "Llamar al restaurante para reservar una mesa"
   },
   "WhatsApp": {
     "label": "Contáctenos por WhatsApp",
