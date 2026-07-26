@@ -1,7 +1,7 @@
 {
   "Metadata": {
-    "title": "Sushi Maydo - Japanese Restaurant in Barcelona",
-    "description": "Where Japanese tradition meets Mediterranean elegance. Japanese restaurant in L'Hospitalet de Llobregat, Barcelona."
+    "title": "Sushi Maydo Santa Eulàlia - Japanese Restaurant in L'Hospitalet",
+    "description": "Official website of the Sushi Maydo restaurant at Carrer Santa Eulàlia, 204 (L'Hospitalet de Llobregat). Where Japanese tradition meets Mediterranean elegance."
   },
   "Nav": {
     "home": "Home",
@@ -15,15 +15,18 @@
     "events": "Events",
     "more": "More",
     "langSwitch": "EN",
+    "branch": "Santa Eulàlia",
+    "branchAria": "Sushi Maydo Santa Eulàlia restaurant",
     "menuAria": "Open menu",
     "closeAria": "Close menu",
     "whatsappAria": "Contact us on WhatsApp"
   },
   "Hero": {
+    "branch": "Santa Eulàlia restaurant · L'Hospitalet",
     "sub": "Japanese Restaurant · All-You-Can-Eat Buffet",
     "title": "MAYDO",
     "tagline": "日本料理の芸術",
-    "desc": "Where Japanese tradition meets Mediterranean elegance. L'Hospitalet de Llobregat, Barcelona.",
+    "desc": "Official website of our restaurant at Carrer Santa Eulàlia, 204. Where Japanese tradition meets Mediterranean elegance.",
     "cta": "Book a table",
     "cta2": "View menu",
     "scroll": "SCROLL"
@@ -114,6 +117,7 @@
     "note": "You will receive a confirmation by email"
   },
   "Footer": {
+    "branch": "Santa Eulàlia restaurant",
     "tagline": "Where Japanese tradition meets Mediterranean elegance.",
     "hours": "Opening hours",
     "hours1": "Every day",
@@ -184,12 +188,6 @@
     "catLabel": "Category",
     "mealLunch": "Lunch",
     "mealDinner": "Dinner",
-    "dailyMenuLabel": "Daily set menu",
-    "dailyMenuTitle": "5 dishes · drink · coffee or tea",
-    "dailyMenuDesc": "Pick any 5 dishes from our menu, served with a drink and coffee or tea after the meal.",
-    "dailyMenuDineIn": "Dine-in only",
-    "dailyMenuTakeaway": "Takeaway price: please call to confirm",
-    "dailyMenuCta": "Order this menu",
     "setMealTagline": "Set menu",
     "setMealsHeroTitle": "Today's set menus",
     "setMealCoursesCount": "{count} courses",

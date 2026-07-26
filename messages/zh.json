@@ -1,7 +1,7 @@
 {
   "Metadata": {
-    "title": "Sushi Maydo - 巴塞罗那日式餐厅",
-    "description": "日本传统与地中海优雅的邂逅。位于巴塞罗那 L'Hospitalet de Llobregat 的日式餐厅。"
+    "title": "Sushi Maydo Santa Eulàlia - L'Hospitalet 日式餐厅",
+    "description": "Sushi Maydo Santa Eulàlia 门店官网（Carrer Santa Eulàlia, 204，L'Hospitalet de Llobregat）。日本传统与地中海优雅的邂逅。"
   },
   "Nav": {
     "home": "首页",
@@ -15,15 +15,18 @@
     "events": "包场活动",
     "more": "更多",
     "langSwitch": "中文",
+    "branch": "Santa Eulàlia",
+    "branchAria": "Sushi Maydo Santa Eulàlia 门店",
     "menuAria": "打开菜单",
     "closeAria": "关闭菜单",
     "whatsappAria": "通过 WhatsApp 联系我们"
   },
   "Hero": {
+    "branch": "Santa Eulàlia 门店 · L'Hospitalet",
     "sub": "日式料理 · 自助餐厅",
     "title": "MAYDO",
     "tagline": "日本料理の芸術",
-    "desc": "日本传统与地中海优雅的邂逅。巴塞罗那 L'Hospitalet de Llobregat。",
+    "desc": "本站为 Carrer Santa Eulàlia, 204 门店官网。日本传统与地中海优雅的邂逅。",
     "cta": "预订座位",
     "cta2": "查看菜单",
     "scroll": "SCROLL"
@@ -114,6 +117,7 @@
     "note": "您将收到一封确认邮件"
   },
   "Footer": {
+    "branch": "Santa Eulàlia 门店",
     "tagline": "日本传统与地中海优雅的邂逅。",
     "hours": "营业时间",
     "hours1": "每天营业",
@@ -184,12 +188,6 @@
     "catLabel": "分类",
     "mealLunch": "午餐",
     "mealDinner": "晚餐",
-    "dailyMenuLabel": "每日套餐",
-    "dailyMenuTitle": "5 道菜 · 饮料 · 咖啡 或 茶",
-    "dailyMenuDesc": "从菜单中自选 5 道菜，搭配一杯饮品，餐后享用咖啡或茶。",
-    "dailyMenuDineIn": "仅限堂食",
-    "dailyMenuTakeaway": "外带价请来电咨询",
-    "dailyMenuCta": "点这个套餐",
     "setMealTagline": "今日套餐",
     "setMealsHeroTitle": "今日精选套餐",
     "setMealCoursesCount": "{count} 道菜",

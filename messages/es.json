@@ -1,7 +1,7 @@
 {
   "Metadata": {
-    "title": "Sushi Maydo - Restaurante Japonés en Barcelona",
-    "description": "Donde la tradición japonesa se encuentra con la elegancia mediterránea. Restaurante japonés en L'Hospitalet de Llobregat, Barcelona."
+    "title": "Sushi Maydo Santa Eulàlia - Restaurante Japonés en L'Hospitalet",
+    "description": "Web oficial del restaurante Sushi Maydo de Carrer Santa Eulàlia, 204 (L'Hospitalet de Llobregat). Donde la tradición japonesa se encuentra con la elegancia mediterránea."
   },
   "Nav": {
     "home": "Inicio",
@@ -15,15 +15,18 @@
     "events": "Eventos",
     "more": "Más",
     "langSwitch": "ES",
+    "branch": "Santa Eulàlia",
+    "branchAria": "Restaurante Sushi Maydo Santa Eulàlia",
     "menuAria": "Abrir menú",
     "closeAria": "Cerrar menú",
     "whatsappAria": "Contáctenos por WhatsApp"
   },
   "Hero": {
+    "branch": "Restaurante Santa Eulàlia · L'Hospitalet",
     "sub": "Restaurante Japonés · Buffet Libre",
     "title": "MAYDO",
     "tagline": "日本料理の芸術",
-    "desc": "Donde la tradición japonesa se encuentra con la elegancia mediterránea. L'Hospitalet de Llobregat, Barcelona.",
+    "desc": "Web oficial de nuestro restaurante de Carrer Santa Eulàlia, 204. Donde la tradición japonesa se encuentra con la elegancia mediterránea.",
     "cta": "Reservar mesa",
     "cta2": "Ver carta",
     "scroll": "SCROLL"
@@ -114,6 +117,7 @@
     "note": "Recibirá una confirmación por correo electrónico"
   },
   "Footer": {
+    "branch": "Restaurante Santa Eulàlia",
     "tagline": "Donde la tradición japonesa se encuentra con la elegancia mediterránea.",
     "hours": "Horario",
     "hours1": "Todos los días",
@@ -184,12 +188,6 @@
     "catLabel": "Categoría",
     "mealLunch": "Mediodía",
     "mealDinner": "Noche",
-    "dailyMenuLabel": "Menú del día",
-    "dailyMenuTitle": "5 platos · bebida · café o té",
-    "dailyMenuDesc": "Elija 5 platos de nuestra carta, acompañados de una bebida y café o té de sobremesa.",
-    "dailyMenuDineIn": "Solo en restaurante",
-    "dailyMenuTakeaway": "Precio para llevar: consúltenos por teléfono",
-    "dailyMenuCta": "Pedir este menú",
     "setMealTagline": "Menú del día",
     "setMealsHeroTitle": "Menús del día",
     "setMealCoursesCount": "{count} platos",

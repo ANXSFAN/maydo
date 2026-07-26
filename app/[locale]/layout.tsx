@@ -47,14 +47,14 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   return {
     title: {
       default: title,
-      template: `%s | Sushi Maydo`,
+      template: `%s | Sushi Maydo Santa Eulàlia`,
     },
     description,
     metadataBase: new URL("https://sushimaydo.es"),
     openGraph: {
       title,
       description,
-      siteName: "Sushi Maydo",
+      siteName: "Sushi Maydo Santa Eulàlia",
       locale,
       type: "website",
     },
@@ -95,7 +95,10 @@ export default async function LocaleLayout({ children, params }: Props) {
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "Restaurant",
-    name: "Sushi Maydo",
+    // 门店名带分店后缀 —— Google 上与其他 Sushi Maydo 门店区分 (2026-07 客户反馈)
+    name: "Sushi Maydo Santa Eulàlia",
+    alternateName: "Sushi Maydo",
+    branchCode: "Santa Eulàlia",
     image: "https://sushimaydo.es/images/logo.svg",
     url: "https://sushimaydo.es",
     telephone: "+34936844036",
@@ -115,20 +118,22 @@ export default async function LocaleLayout({ children, params }: Props) {
       latitude: 41.3662,
       longitude: 2.122,
     },
+    // 全周营业（午 + 晚），与 Footer / Contacto 文案保持一致
     openingHoursSpecification: [
       {
         "@type": "OpeningHoursSpecification",
-        dayOfWeek: ["Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
+        dayOfWeek: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
         opens: "13:00",
         closes: "16:30",
       },
       {
         "@type": "OpeningHoursSpecification",
-        dayOfWeek: ["Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"],
+        dayOfWeek: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
         opens: "20:30",
         closes: "23:30",
       },
     ],
+
     aggregateRating: {
       "@type": "AggregateRating",
       ratingValue: "4.5",

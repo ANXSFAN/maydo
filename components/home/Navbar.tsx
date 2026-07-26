@@ -91,15 +91,28 @@ export default function Navbar() {
           className="max-w-[1200px] mx-auto px-5 sm:px-10 flex items-center justify-between transition-[height] duration-500"
           style={{ height: solid ? 70 : 90 }}
         >
-          {/* Logo */}
-          <Link href="/" className="flex items-center no-underline">
+          {/* Logo + 门店名 —— 明确标示这是 Santa Eulàlia 分店 (2026-07 客户反馈) */}
+          <Link
+            href="/"
+            className="flex items-center gap-2.5 sm:gap-3 no-underline min-w-0"
+            aria-label={t("branchAria")}
+          >
             <Image
               src="/images/logo.svg"
               alt="Sushi Maydo"
               width={44}
               height={44}
-              className="brightness-0 invert"
+              className="brightness-0 invert shrink-0"
             />
+            <span className="h-8 w-px bg-camel/30 shrink-0" />
+            <span className="flex flex-col leading-tight min-w-0">
+              <span className="font-body text-[9px] sm:text-[10px] tracking-[2.5px] uppercase text-white/50 whitespace-nowrap">
+                Sushi Maydo
+              </span>
+              <span className="font-body text-[12px] sm:text-[13px] tracking-[1.5px] text-camel whitespace-nowrap">
+                {t("branch")}
+              </span>
+            </span>
           </Link>
 
           {/* Mobile right side: WhatsApp + Hamburger */}

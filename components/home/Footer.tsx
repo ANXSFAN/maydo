@@ -35,6 +35,10 @@ export default function Footer() {
               />
             </Link>
             <DiamondDivider className="text-camel/30" />
+            {/* 门店名 —— 明确这是 Santa Eulàlia 分店 (2026-07 客户反馈) */}
+            <p className="font-body text-[13px] tracking-[2px] uppercase text-camel mb-2">
+              {t("branch")}
+            </p>
             <p className="font-body text-[13px] text-white/40 leading-relaxed font-light max-w-[300px] max-md:mx-auto">
               {t("tagline")}
             </p>

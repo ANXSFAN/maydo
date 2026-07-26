@@ -62,41 +62,10 @@ type OrderStatus = "idle" | "loading" | "error";
 const CART_STORAGE_KEY = "sushi-maydo-cart";
 const SLOTS_DEFAULT_VISIBLE = 6; // 每段默认显示几个时段，超出收起
 
-// ── Menú del día 14,95 € (2026-05 硬编码) ────────────────────────────────────
-// 复用 SetMealSelector 流程：构造一个 SetMealData，主菜/饮料/咖啡 3 个 course。
-// 咖啡/茶不来自 Orderlix，注入两个虚拟 MenuItemData 给 selector 的 items 池。
-const DAILY_MENU_ID = "daily-menu-1495";
-const DAILY_MENU_PRICE = 14.95;
-const DAILY_HOT_BEV_CAT = "daily-hot-bev";
-const DAILY_HOT_BEV_ITEMS: MenuItemData[] = [
-  {
-    id: "daily-cafe",
-    categoryId: DAILY_HOT_BEV_CAT,
-    name: { es: "Café", ca: "Cafè", en: "Coffee", zh: "咖啡" },
-    description: null,
-    price: 0,
-    imageUrl: null,
-    allergens: [],
-    options: null,
-  },
-  {
-    id: "daily-te",
-    categoryId: DAILY_HOT_BEV_CAT,
-    name: { es: "Té", ca: "Te", en: "Tea", zh: "茶" },
-    description: null,
-    price: 0,
-    imageUrl: null,
-    allergens: [],
-    options: null,
-  },
-];
-// 套餐配的饮料 —— 只算软饮（refresco / agua / zumo 等）
-const SOFT_DRINK_CATEGORY_REGEX =
-  /refresc|refresco|soft|软饮|无酒精|sin\s*alcohol|sense\s*alcohol|agua|water|水|juice|zumo|suc|果汁|coca|cola|sprite|fanta|nestea|aquarius/i;
-
-// 套餐不能选的分类 —— 酒类、咖啡/茶（咖啡/茶通过虚拟 course 单独选）
-const NON_DISH_CATEGORY_REGEX =
-  /\b(wine|vino|vins|cerveza|cervesa|beer|sake|cocktail|c[oó]ctel|licor|alcohol|cava|champ|whisky|vodka|gin|ron|rum|tequila|brand|co[ñn]ac|cognac|caf[ée]s?|coffee|infusi|t[ée]s?)\b|啤酒|清酒|鸡尾酒|红酒|白酒|咖啡|茶/i;
+// Menú del día 14,95 € —— 已整体移除 (2026-07)
+// 商家反馈：该套餐不支持线上点单，只在店内售卖，网站上出现会造成误解。
+// 原实现（硬编码 SetMealData + 虚拟咖啡/茶 course）见 git 历史，如需恢复请从
+// commit f396244 之前的版本取回。SetMealSelector 组件本身保留。
 
 export default function PedidoContent({ categories, items, setMeals, initialMealTime, initialFlow }: Props) {
   const t = useTranslations("Pedido");
@@ -149,79 +118,6 @@ export default function PedidoContent({ categories, items, setMeals, initialMeal
   }, [categories, items]);
 
   const visibleCategories = categoriesWithItems;
-
-  // ---- Menú del día — 把可见分类分成"软饮池 / 菜池"，构造硬编码 SetMealData ----
-  // 菜池 = 常规菜品 + 甜品（排除：软饮归 drink course / 酒类、咖啡茶完全不能当菜选）
-  const dailyMenuData = useMemo<SetMealData | null>(() => {
-    if (visibleCategories.length === 0) return null;
-    const drinkIds: string[] = [];
-    const dishIds: string[] = [];
-    for (const { category } of visibleCategories) {
-      const namePool = Object.values(category.name).join(" ");
-      if (SOFT_DRINK_CATEGORY_REGEX.test(namePool)) drinkIds.push(category.id);
-      else if (NON_DISH_CATEGORY_REGEX.test(namePool)) continue; // 酒/咖啡/茶 → 排除
-      else dishIds.push(category.id);
-    }
-    if (dishIds.length === 0) return null;
-    return {
-      id: DAILY_MENU_ID,
-      name: {
-        es: "Menú del día",
-        ca: "Menú del dia",
-        en: "Daily set menu",
-        zh: "每日套餐",
-      },
-      price: DAILY_MENU_PRICE,
-      courses: [
-        {
-          courseNumber: 1,
-          label: {
-            es: "5 platos a elegir",
-            ca: "5 plats a triar",
-            en: "Pick 5 dishes",
-            zh: "选 5 道菜",
-          },
-          categoryIds: dishIds,
-          maxChoices: 5,
-        },
-        ...(drinkIds.length > 0
-          ? [
-              {
-                courseNumber: 2,
-                label: {
-                  es: "Bebida",
-                  ca: "Beguda",
-                  en: "Drink",
-                  zh: "饮料",
-                },
-                categoryIds: drinkIds,
-                maxChoices: 1,
-              },
-            ]
-          : []),
-        {
-          courseNumber: drinkIds.length > 0 ? 3 : 2,
-          label: {
-            es: "Café o té",
-            ca: "Cafè o te",
-            en: "Coffee or tea",
-            zh: "咖啡或茶",
-          },
-          categoryIds: [DAILY_HOT_BEV_CAT],
-          maxChoices: 1,
-        },
-      ],
-      availableFrom: null,
-      availableTo: null,
-      sortOrder: 0,
-    };
-  }, [visibleCategories]);
-
-  // SetMealSelector 内部用 items 做白名单/itemMap，需要把虚拟咖啡/茶注入
-  const itemsWithDailyExtras = useMemo(
-    () => [...items, ...DAILY_HOT_BEV_ITEMS],
-    [items]
-  );
 
   // ---- Time slot filtering ----
   const [now, setNow] = useState(() => new Date());
@@ -793,59 +689,7 @@ export default function PedidoContent({ categories, items, setMeals, initialMeal
               {/* Set meals hero 已移除 (2026-05) — 数据仍从 Orderlix set_meal 拉取，
                   SetMealSelector 组件保留以备未来重新接入。当前不在前端强推入口。 */}
 
-              {/* Daily set menu — 硬编码静态卡 (2026-05)
-                  价格 14.95 € 仅限堂食；外带价待商家确认。等定价稳定可不动；
-                  若 Orderlix 后端接入新套餐结构再换回 SetMealSelector */}
-              <div className="mb-8 sm:mb-10">
-                <div className="relative overflow-hidden bg-maroon text-white border border-maroon shadow-[0_12px_32px_rgba(122,66,66,0.18)]">
-                  <div className="absolute top-0 left-0 h-[3px] w-full bg-camel" />
-                  <div className="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-6 sm:gap-10 items-center p-6 sm:p-10">
-                    <div className="min-w-0">
-                      <p className="font-body text-[10px] sm:text-[11px] tracking-[3px] uppercase text-camel mb-2">
-                        {t("dailyMenuLabel")}
-                      </p>
-                      <h3 className="text-[22px] sm:text-[28px] font-light leading-tight mb-3">
-                        {t("dailyMenuTitle")}
-                      </h3>
-                      <p className="font-body text-[13px] sm:text-[14px] text-white/75 font-light leading-relaxed max-w-[480px] mb-5">
-                        {t("dailyMenuDesc")}
-                      </p>
-                      <div className="flex flex-wrap gap-2">
-                        <span className="inline-flex items-center gap-1.5 px-3 py-1 border border-camel/50 text-camel font-body text-[10px] sm:text-[11px] tracking-[1.5px] uppercase">
-                          <svg className="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                            <polyline points="20 6 9 17 4 12" />
-                          </svg>
-                          {t("dailyMenuDineIn")}
-                        </span>
-                        <span className="inline-flex items-center gap-1.5 px-3 py-1 border border-white/20 text-white/60 font-body text-[10px] sm:text-[11px] tracking-[1.5px] uppercase">
-                          {t("dailyMenuTakeaway")}
-                        </span>
-                      </div>
-                    </div>
-                    <div className="flex md:flex-col items-center md:items-end justify-between md:justify-center gap-4 md:gap-5 md:text-right md:border-l md:border-white/10 md:pl-10">
-                      <div>
-                        <div className="font-display text-[40px] sm:text-[52px] leading-none text-camel font-light">
-                          14,95<span className="text-[22px] sm:text-[28px] align-top ml-1">€</span>
-                        </div>
-                        <p className="font-body text-[10px] tracking-[2px] uppercase text-white/50 mt-2">
-                          {t("dailyMenuDineIn")}
-                        </p>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          if (dailyMenuData) setSelectedSetMeal(dailyMenuData);
-                        }}
-                        disabled={!dailyMenuData}
-                        className="inline-flex items-center gap-2 px-5 py-2.5 bg-camel text-night hover:bg-camel/90 border border-camel font-body text-[11px] tracking-[2px] uppercase cursor-pointer transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        {t("dailyMenuCta")}
-                        <span>→</span>
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </div>
+              {/* Menú del día 卡片已移除 (2026-07)：该套餐不支持线上点单 */}
 
               {/* Category sections */}
               <div className="space-y-8 sm:space-y-10">
@@ -1406,10 +1250,9 @@ export default function PedidoContent({ categories, items, setMeals, initialMeal
       {selectedSetMeal && (
         <SetMealSelector
           setMeal={selectedSetMeal}
-          items={selectedSetMeal.id === DAILY_MENU_ID ? itemsWithDailyExtras : items}
+          items={items}
           onClose={() => setSelectedSetMeal(null)}
           onConfirm={addSetMealToCart}
-          enforceMaxChoices={selectedSetMeal.id === DAILY_MENU_ID}
         />
       )}
       </>

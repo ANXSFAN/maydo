@@ -1,7 +1,7 @@
 {
   "Metadata": {
-    "title": "Sushi Maydo - Restaurant Japonès a Barcelona",
-    "description": "On la tradició japonesa es troba amb l'elegància mediterrània. Restaurant japonès a L'Hospitalet de Llobregat, Barcelona."
+    "title": "Sushi Maydo Santa Eulàlia - Restaurant Japonès a L'Hospitalet",
+    "description": "Web oficial del restaurant Sushi Maydo del Carrer Santa Eulàlia, 204 (L'Hospitalet de Llobregat). On la tradició japonesa es troba amb l'elegància mediterrània."
   },
   "Nav": {
     "home": "Inici",
@@ -15,15 +15,18 @@
     "events": "Esdeveniments",
     "more": "Més",
     "langSwitch": "CA",
+    "branch": "Santa Eulàlia",
+    "branchAria": "Restaurant Sushi Maydo Santa Eulàlia",
     "menuAria": "Obrir menú",
     "closeAria": "Tancar menú",
     "whatsappAria": "Contacteu-nos per WhatsApp"
   },
   "Hero": {
+    "branch": "Restaurant Santa Eulàlia · L'Hospitalet",
     "sub": "Restaurant Japonès · Bufet Lliure",
     "title": "MAYDO",
     "tagline": "日本料理の芸術",
-    "desc": "On la tradició japonesa es troba amb l'elegància mediterrània. L'Hospitalet de Llobregat, Barcelona.",
+    "desc": "Web oficial del nostre restaurant del Carrer Santa Eulàlia, 204. On la tradició japonesa es troba amb l'elegància mediterrània.",
     "cta": "Reservar taula",
     "cta2": "Veure carta",
     "scroll": "SCROLL"
@@ -114,6 +117,7 @@
     "note": "Rebreu una confirmació per correu electrònic"
   },
   "Footer": {
+    "branch": "Restaurant Santa Eulàlia",
     "tagline": "On la tradició japonesa es troba amb l'elegància mediterrània.",
     "hours": "Horari",
     "hours1": "Cada dia",
@@ -184,12 +188,6 @@
     "catLabel": "Categoria",
     "mealLunch": "Migdia",
     "mealDinner": "Nit",
-    "dailyMenuLabel": "Menú del dia",
-    "dailyMenuTitle": "5 plats · beguda · cafè o te",
-    "dailyMenuDesc": "Trieu 5 plats de la nostra carta, acompanyats d'una beguda i cafè o te de postres.",
-    "dailyMenuDineIn": "Només al restaurant",
-    "dailyMenuTakeaway": "Preu per emportar: truqueu-nos per consultar-lo",
-    "dailyMenuCta": "Demanar aquest menú",
     "setMealTagline": "Menú del dia",
     "setMealsHeroTitle": "Menús del dia",
     "setMealCoursesCount": "{count} plats",

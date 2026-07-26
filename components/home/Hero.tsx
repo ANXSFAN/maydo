@@ -51,6 +51,16 @@ export default function Hero() {
 
       {/* Content */}
       <div className="relative z-[2]">
+        {/* 门店徽标 —— 明确这是 Santa Eulàlia 分店 (2026-07 客户反馈) */}
+        <motion.p
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 1, delay: 0.15 }}
+          className="inline-block mb-5 px-4 py-1.5 border border-camel/60 bg-night/30 backdrop-blur-sm font-body text-[11px] sm:text-[12px] tracking-[3px] uppercase text-camel"
+        >
+          {t("branch")}
+        </motion.p>
+
         <motion.p
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
