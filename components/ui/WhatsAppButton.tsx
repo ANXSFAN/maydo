@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { motion, AnimatePresence } from "framer-motion";
 
-const WHATSAPP_NUMBER = "34936844036";
+const WHATSAPP_NUMBER = "34665128006";
 
 export default function WhatsAppButton() {
   const t = useTranslations("WhatsApp");

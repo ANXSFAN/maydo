@@ -285,7 +285,7 @@ function customerCopy(locale: string) {
         addressLabel: "Address",
         itemsHeader: "Your items",
         discountLabel: "Discount",
-        footer: "See you soon! If you need to cancel or change the order, please call +34 936 844 036.",
+        footer: "See you soon! If you need to cancel or change the order, please call +34 665 128 006.",
       };
     case "ca":
       return {
@@ -298,7 +298,7 @@ function customerCopy(locale: string) {
         addressLabel: "Adreça",
         itemsHeader: "La teva comanda",
         discountLabel: "Descompte",
-        footer: "A reveure! Si has d'anul·lar o canviar la comanda, truca'ns al +34 936 844 036.",
+        footer: "A reveure! Si has d'anul·lar o canviar la comanda, truca'ns al +34 665 128 006.",
       };
     case "zh":
       return {
@@ -311,7 +311,7 @@ function customerCopy(locale: string) {
         addressLabel: "地址",
         itemsHeader: "您的订单",
         discountLabel: "优惠",
-        footer: "期待您的光临！如需取消或修改订单，请致电 +34 936 844 036。",
+        footer: "期待您的光临！如需取消或修改订单，请致电 +34 665 128 006。",
       };
     default:
       return {
@@ -324,7 +324,7 @@ function customerCopy(locale: string) {
         addressLabel: "Dirección",
         itemsHeader: "Tu pedido",
         discountLabel: "Descuento",
-        footer: "¡Nos vemos! Si necesitas anular o cambiar el pedido, llámanos al +34 936 844 036.",
+        footer: "¡Nos vemos! Si necesitas anular o cambiar el pedido, llámanos al +34 665 128 006.",
       };
   }
 }

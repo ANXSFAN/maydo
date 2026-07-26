@@ -490,7 +490,7 @@ export default function SushiMaydoHome() {
             <div>
               <h4 style={{ fontFamily: "'Zen Kaku Gothic New', sans-serif", fontSize: 11, letterSpacing: 3, color: COLORS.camel, marginBottom: 24, fontWeight: 400 }}>{t.footer.contact}</h4>
               <p style={{ fontFamily: "'Zen Kaku Gothic New', sans-serif", fontSize: 13, color: "rgba(255,255,255,0.5)", lineHeight: 2, fontWeight: 300 }}>
-                +34 936 844 036<br />sushimaydobcn<br />plazaeuropa@gmail.com
+                +34 665 128 006<br />sushimaydobcn<br />plazaeuropa@gmail.com
               </p>
             </div>
             <div>

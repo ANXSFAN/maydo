@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { motion, AnimatePresence } from "framer-motion";
 import FadeIn from "@/components/ui/FadeIn";
 import DiamondDivider from "@/components/ui/DiamondDivider";
+import { GOOGLE_MAPS_LINK } from "@/lib/location";
 
 const REVIEW_KEYS = ["r1", "r2", "r3", "r4", "r5", "r6"] as const;
 
@@ -86,7 +87,7 @@ export default function GoogleReviews() {
 
         <div className="text-center mt-6">
           <a
-            href="https://www.google.com/maps/place/Sushi+Maydo/"
+            href={GOOGLE_MAPS_LINK}
             target="_blank"
             rel="noopener noreferrer"
             className="font-body text-xs text-camel no-underline hover:underline tracking-wider"

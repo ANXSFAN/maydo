@@ -70,7 +70,7 @@ export async function POST(request: NextRequest) {
     if (process.env.RESEND_API_KEY) {
       try {
         const resend = new Resend(process.env.RESEND_API_KEY);
-        const periodLabel = period === "lunch" ? "Mediodía (13:00-16:30)" : "Noche (20:30-23:30)";
+        const periodLabel = period === "lunch" ? "Mediodía (13:00-16:30)" : "Noche (20:00-23:30)";
 
         // Notify restaurant (so the staff can hold a table)
         await resend.emails.send({
@@ -120,7 +120,7 @@ export async function POST(request: NextRequest) {
                   ${notes ? `<tr><td style="padding: 10px 0; color: #999; font-size: 13px;">Notas</td><td style="padding: 10px 0; font-size: 14px;">${notes}</td></tr>` : ""}
                 </table>
                 <p style="color: #666; font-size: 14px;">Si necesita modificar o cancelar su reserva, contacte con nosotros:</p>
-                <p style="color: #666; font-size: 14px;">Tel: <a href="tel:+34936844036" style="color: #7A4242;">+34 936 844 036</a></p>
+                <p style="color: #666; font-size: 14px;">Tel: <a href="tel:+34665128006" style="color: #7A4242;">+34 665 128 006</a></p>
               </div>
               <p style="text-align: center; color: #999; font-size: 11px; margin-top: 20px;">
                 Carrer Santa Eulàlia, 204, 08902 L'Hospitalet de Llobregat, Barcelona

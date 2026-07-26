@@ -7,7 +7,9 @@ export const PICKUP_BUFFER_MIN = 30; // 厨房准备时间，最早可取餐 = �
 type Segment = readonly [string, string];
 
 const LUNCH: Segment = ["13:00", "16:30"];
-const DINNER: Segment = ["20:30", "23:30"];
+const DINNER: Segment = ["20:00", "23:30"];
+// 周五 / 周六晚间延长到 24:00（2026-07 门口告示）
+const DINNER_LATE: Segment = ["20:00", "24:00"];
 
 // 每天营业，全周两段（午餐 + 晚餐）
 const HOURS_BY_DAY: Record<number, readonly Segment[]> = {
@@ -16,8 +18,8 @@ const HOURS_BY_DAY: Record<number, readonly Segment[]> = {
   2: [LUNCH, DINNER],
   3: [LUNCH, DINNER],
   4: [LUNCH, DINNER],
-  5: [LUNCH, DINNER],
-  6: [LUNCH, DINNER],
+  5: [LUNCH, DINNER_LATE],
+  6: [LUNCH, DINNER_LATE],
 };
 
 const toMinutes = (hm: string) => {

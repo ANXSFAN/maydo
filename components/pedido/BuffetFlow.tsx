@@ -15,8 +15,8 @@ const PDF_MAP: Record<`${Meal}-${Audience}`, string | null> = {
   "noche-nino": null,
 };
 
-const PHONE = "+34 936 844 036";
-const PHONE_TEL = "+34936844036";
+const PHONE = "+34 665 128 006";
+const PHONE_TEL = "+34665128006";
 
 export default function BuffetFlow() {
   const t = useTranslations("Buffet");

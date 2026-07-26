@@ -101,7 +101,7 @@ export default async function LocaleLayout({ children, params }: Props) {
     branchCode: "Santa Eulàlia",
     image: "https://sushimaydo.es/images/logo.svg",
     url: "https://sushimaydo.es",
-    telephone: "+34936844036",
+    telephone: "+34665128006",
     email: "sushimaydobcnplazaeuropa@gmail.com",
     servesCuisine: ["Japanese", "Sushi"],
     priceRange: "€€",
@@ -128,9 +128,16 @@ export default async function LocaleLayout({ children, params }: Props) {
       },
       {
         "@type": "OpeningHoursSpecification",
-        dayOfWeek: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
-        opens: "20:30",
+        dayOfWeek: ["Monday", "Tuesday", "Wednesday", "Thursday", "Sunday"],
+        opens: "20:00",
         closes: "23:30",
+      },
+      // 周五 / 周六晚间延长到 24:00
+      {
+        "@type": "OpeningHoursSpecification",
+        dayOfWeek: ["Friday", "Saturday"],
+        opens: "20:00",
+        closes: "24:00",
       },
     ],
 

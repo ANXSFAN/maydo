@@ -2,8 +2,8 @@
 
 import { useTranslations } from "next-intl";
 
-const PHONE_DISPLAY = "+34 936 844 036";
-const PHONE_NUMBER = "+34936844036";
+const PHONE_DISPLAY = "+34 665 128 006";
+const PHONE_NUMBER = "+34665128006";
 const WHATSAPP_URL = `https://wa.me/${PHONE_NUMBER.replace("+", "")}`;
 
 export default function ReservationContactOptions() {

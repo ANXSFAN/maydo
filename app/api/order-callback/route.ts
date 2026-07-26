@@ -48,7 +48,7 @@ async function notifyCancellation(args: { email: string; name?: string; orderId?
           <p>Hola${name ? ` ${name}` : ""},</p>
           <p>Lamentablemente, su pedido${orderId ? ` <strong>${orderId}</strong>` : ""} ha sido cancelado por el restaurante.</p>
           <p>Como el pago se realiza en tienda al recoger, no se ha efectuado ningún cobro.</p>
-          <p>Si tiene alguna duda, puede contactarnos al <a href="tel:+34936844036" style="color:#7A4242;">+34 936 844 036</a>.</p>
+          <p>Si tiene alguna duda, puede contactarnos al <a href="tel:+34665128006" style="color:#7A4242;">+34 665 128 006</a>.</p>
           <br/>
           <p>Disculpe las molestias.</p>
           <p style="color: #7A4242;">— Sushi Maydo</p>

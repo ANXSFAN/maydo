@@ -148,8 +148,8 @@ export default function EventosContent() {
                 {t("directTitle")}
               </h3>
               <div className="space-y-2">
-                <a href="tel:+34936844036" className="block font-body text-[14px] text-white/80 no-underline hover:text-camel transition-colors">
-                  📞 +34 936 844 036
+                <a href="tel:+34665128006" className="block font-body text-[14px] text-white/80 no-underline hover:text-camel transition-colors">
+                  📞 +34 665 128 006
                 </a>
                 <a href="mailto:sushimaydobcnplazaeuropa@gmail.com" className="block font-body text-[14px] text-white/80 no-underline hover:text-camel transition-colors break-all">
                   ✉️ sushimaydobcnplazaeuropa@gmail.com

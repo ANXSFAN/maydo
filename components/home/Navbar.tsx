@@ -118,7 +118,7 @@ export default function Navbar() {
           {/* Mobile right side: WhatsApp + Hamburger */}
           <div className="md:hidden flex items-center gap-1 z-[60] relative">
             <a
-              href="https://wa.me/34936844036"
+              href="https://wa.me/34665128006"
               target="_blank"
               rel="noopener noreferrer"
               aria-label={t("whatsappAria")}

@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { motion, AnimatePresence } from "framer-motion";
 import FadeIn from "@/components/ui/FadeIn";
 import DiamondDivider from "@/components/ui/DiamondDivider";
+import { GOOGLE_MAPS_EMBED } from "@/lib/location";
 
 type FormStatus = "idle" | "loading" | "success" | "error";
 type FormTab = "contact" | "event";
@@ -113,8 +114,8 @@ export default function ContactoContent() {
                   </svg>
                 </div>
                 <h3 className="text-[17px] font-light text-maroon mb-2">{t("phoneLabel")}</h3>
-                <a href="tel:+34936844036" className="font-body text-[14px] text-gray font-light no-underline hover:text-maroon transition-colors">
-                  +34 936 844 036
+                <a href="tel:+34665128006" className="font-body text-[14px] text-gray font-light no-underline hover:text-maroon transition-colors">
+                  +34 665 128 006
                 </a>
               </div>
 
@@ -151,7 +152,7 @@ export default function ContactoContent() {
             <FadeIn delay={0.2}>
               <div className="w-full h-[400px] border border-beige overflow-hidden">
                 <iframe
-                  src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d2994.4!2d2.1275!3d41.3565!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x12a499ca60a6afb5%3A0x2968e6bd292af697!2sSushi%20Maydo!5e0!3m2!1ses!2ses!4v1700000000000"
+                  src={GOOGLE_MAPS_EMBED}
                   width="100%"
                   height="100%"
                   style={{ border: 0 }}

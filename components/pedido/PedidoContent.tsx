@@ -654,7 +654,7 @@ export default function PedidoContent({ categories, items, setMeals, initialMeal
                 <div className="grid grid-cols-2 gap-2 sm:gap-3">
                   {(["lunch", "dinner"] as const).map((m) => {
                     const active = mealTime === m;
-                    const hours = m === "lunch" ? "13:00 – 16:30" : "20:30 – 23:30";
+                    const hours = m === "lunch" ? "13:00 – 16:30" : "20:00 – 23:30";
                     return (
                       <button
                         key={m}

@@ -63,7 +63,7 @@ export default function Footer() {
             <h4 className="font-body text-[11px] tracking-[3px] text-camel mb-6 font-normal">
               {t("hours")}
             </h4>
-            {(["hours1", "hours2", "hours3", "hours4"] as const).map((key) => (
+            {(["hours1", "hours2", "hours3", "hours4", "hours5"] as const).map((key) => (
               <p
                 key={key}
                 className="font-body text-[13px] text-white/50 leading-8 font-light"
