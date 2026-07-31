@@ -14,6 +14,7 @@ import SetMealSelector, { type SetMealResult, type SetMealSelection } from "@/co
 import BuffetFlow from "@/components/pedido/BuffetFlow";
 import { useModalLock } from "@/lib/use-modal-lock";
 import { buildPickupSlots } from "@/lib/business-hours";
+import { ONLINE_ORDERING_ENABLED } from "@/lib/site-settings";
 
 type Flow = "single" | "buffet";
 
@@ -138,6 +139,10 @@ export default function PedidoContent({ categories, items, setMeals, initialMeal
   // ---- Cart helpers ----
   useEffect(() => {
     try {
+      if (!ONLINE_ORDERING_ENABLED) {
+        localStorage.removeItem(CART_STORAGE_KEY);
+        return;
+      }
       const saved = localStorage.getItem(CART_STORAGE_KEY);
       if (!saved) return;
       const parsed = JSON.parse(saved);
@@ -624,6 +629,19 @@ export default function PedidoContent({ categories, items, setMeals, initialMeal
 
       <section className="py-[clamp(20px,8vw,100px)] px-[clamp(12px,4vw,40px)] bg-cream">
         <div className="max-w-[1200px] mx-auto">
+          {!ONLINE_ORDERING_ENABLED && (
+            <div className="mb-6 sm:mb-8 border border-camel/35 bg-camel/[0.06] px-5 sm:px-7 py-5">
+              <p className="font-body text-[10px] tracking-[2.5px] uppercase text-camel mb-2">
+                {t("catalogNoticeLabel")}
+              </p>
+              <h2 className="text-[20px] sm:text-[23px] font-light text-night-text mb-1.5">
+                {t("catalogNoticeTitle")}
+              </h2>
+              <p className="font-body text-[13px] sm:text-[14px] text-night-text-dim font-light leading-relaxed">
+                {t("catalogNoticeDesc")}
+              </p>
+            </div>
+          )}
           <div className="flex gap-10 max-lg:flex-col">
             {/* Menu items */}
             <div className="flex-1 min-w-0">
@@ -649,8 +667,8 @@ export default function PedidoContent({ categories, items, setMeals, initialMeal
                 </div>
               )}
 
-              {/* Meal time tabs — entry only, currently does not filter data */}
-              <div className="mb-6 sm:mb-8 max-w-[640px] mx-auto">
+              {/* 下单重新开放后再显示时段入口；只读价目模式不展示无筛选作用的控件 */}
+              {ONLINE_ORDERING_ENABLED && <div className="mb-6 sm:mb-8 max-w-[640px] mx-auto">
                 <div className="grid grid-cols-2 gap-2 sm:gap-3">
                   {(["lunch", "dinner"] as const).map((m) => {
                     const active = mealTime === m;
@@ -684,7 +702,7 @@ export default function PedidoContent({ categories, items, setMeals, initialMeal
                     );
                   })}
                 </div>
-              </div>
+              </div>}
 
               {/* Set meals hero 已移除 (2026-05) — 数据仍从 Orderlix set_meal 拉取，
                   SetMealSelector 组件保留以备未来重新接入。当前不在前端强推入口。 */}
@@ -744,14 +762,14 @@ export default function PedidoContent({ categories, items, setMeals, initialMeal
                               )}
                               <AllergenBadges allergens={item.allergens} compact />
 
-                              <div className="mt-auto pt-2 lg:pt-3 flex items-center justify-between gap-3 lg:flex-col lg:items-stretch">
-                                <span className="text-[16px] font-light text-camel lg:block lg:mb-3 shrink-0">
+                              <div className={`mt-auto pt-2 lg:pt-3 flex items-center justify-between gap-3 ${ONLINE_ORDERING_ENABLED ? "lg:flex-col lg:items-stretch" : "lg:pt-5"}`}>
+                                <span className={`font-light text-camel shrink-0 ${ONLINE_ORDERING_ENABLED ? "text-[16px] lg:block lg:mb-3" : "text-[19px]"}`}>
                                   {formatPrice(item.price)}
                                   {itemHasOptions && (
                                     <span className="text-[10px] text-gray ml-1">+</span>
                                   )}
                                 </span>
-                                <div className="shrink-0 lg:w-full">
+                                {ONLINE_ORDERING_ENABLED && <div className="shrink-0 lg:w-full">
                                   {itemHasOptions ? (
                                     <button
                                       onClick={() => addToCart(item)}
@@ -790,7 +808,7 @@ export default function PedidoContent({ categories, items, setMeals, initialMeal
                                       {t("add")}
                                     </button>
                                   )}
-                                </div>
+                                </div>}
                               </div>
                             </div>
                           </div>
@@ -803,7 +821,7 @@ export default function PedidoContent({ categories, items, setMeals, initialMeal
             </div>
 
             {/* Desktop cart sidebar */}
-            <div className="w-[340px] shrink-0 max-lg:hidden">
+            {ONLINE_ORDERING_ENABLED && <div className="w-[340px] shrink-0 max-lg:hidden">
               <div className="sticky top-[100px]">
                 <div className="bg-cream border border-beige">
                   <div className="p-6 pb-4 border-b border-beige">
@@ -851,14 +869,14 @@ export default function PedidoContent({ categories, items, setMeals, initialMeal
                   )}
                 </div>
               </div>
-            </div>
+            </div>}
           </div>
         </div>
       </section>
 
       {/* Mobile floating cart bar */}
       <AnimatePresence>
-        {cartCount > 0 && (
+        {ONLINE_ORDERING_ENABLED && cartCount > 0 && (
           <motion.div
             initial={{ y: 100 }}
             animate={{ y: 0 }}
@@ -899,7 +917,7 @@ export default function PedidoContent({ categories, items, setMeals, initialMeal
 
       {/* Mobile cart drawer */}
       <AnimatePresence>
-        {showMobileCart && (
+        {ONLINE_ORDERING_ENABLED && showMobileCart && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -962,7 +980,7 @@ export default function PedidoContent({ categories, items, setMeals, initialMeal
 
       {/* Checkout modal */}
       <AnimatePresence>
-        {showCheckout && (
+        {ONLINE_ORDERING_ENABLED && showCheckout && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -1237,9 +1255,9 @@ export default function PedidoContent({ categories, items, setMeals, initialMeal
         )}
       </AnimatePresence>
 
-      {cartCount > 0 && <div className="lg:hidden h-[68px] pointer-events-none" />}
+      {ONLINE_ORDERING_ENABLED && cartCount > 0 && <div className="lg:hidden h-[68px] pointer-events-none" />}
 
-      {optionsModalItem && (
+      {ONLINE_ORDERING_ENABLED && optionsModalItem && (
         <MenuItemOptionsModal
           item={optionsModalItem}
           onClose={() => setOptionsModalItem(null)}
@@ -1247,7 +1265,7 @@ export default function PedidoContent({ categories, items, setMeals, initialMeal
         />
       )}
 
-      {selectedSetMeal && (
+      {ONLINE_ORDERING_ENABLED && selectedSetMeal && (
         <SetMealSelector
           setMeal={selectedSetMeal}
           items={items}

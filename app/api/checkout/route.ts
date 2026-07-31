@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { fulfillWebOrder, type OrderItem } from "@/lib/order-fulfillment";
+import { ONLINE_ORDERING_ENABLED } from "@/lib/site-settings";
 
 type Incoming = {
   name: string;
@@ -22,6 +23,13 @@ const newOrderId = () => {
 };
 
 export async function POST(request: NextRequest) {
+  if (!ONLINE_ORDERING_ENABLED) {
+    return NextResponse.json(
+      { error: "Online ordering is not available for this restaurant." },
+      { status: 503 }
+    );
+  }
+
   try {
     const body = (await request.json()) as Incoming;
     const {

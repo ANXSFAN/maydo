@@ -6,9 +6,9 @@ import { Link } from "@/i18n/navigation";
 import FadeIn from "@/components/ui/FadeIn";
 import DiamondDivider from "@/components/ui/DiamondDivider";
 
-// 客户反馈 2026-05：统一流程入口
-//   A) 单点 + 餐厅自取 → /pedido (现有点单 UI)
-//   B) 看自助餐菜单 → /pedido?flow=buffet (3 步选择: 下午/晚上 → 成人/儿童 → PDF)
+// Santa Eulàlia 使用只读价目模式：
+//   A) 查看单点菜品与价格（不开放网站下单）
+//   B) 直接查看午市、晚市及节假日自助餐价格
 const ENTRIES = [
   {
     key: "single" as const,
