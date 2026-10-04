@@ -47,7 +47,7 @@ This version has breaking changes — APIs, conventions, and file structure may 
 
 - 下次客户审核时，重点对照这 4 点解释 → 演示。
 - PDF 占位用 `prueba.pdf` 复制为 4 份放在 `public/menus/buffet-{tarde,noche}-{adulto,nino}.pdf`，等真 PDF 来了直接覆盖。
-- HERO 图已压缩（2026-10）：8 张统一 1920×2880 mozjpeg，单张约 250–470KB，共 ~3MB（原图 ~50MB 仍在 git 历史中：`git show 7f7733b:public/images/hero/<文件名>`）。
+- HERO 图已压缩（2026-10）：8 张统一 1920×2880 mozjpeg，单张约 250–470KB，共 ~2.8MB（原图 ~50MB 仍在 git 历史中：`git show 7f7733b:public/images/hero/<文件名>`）。
 
 ### 待客户提供
 
