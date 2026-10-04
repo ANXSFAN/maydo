@@ -725,8 +725,8 @@ export default function PedidoContent({ categories, items, setMeals, initialMeal
 
                     <div className="flex flex-col gap-2 lg:grid lg:grid-cols-3 lg:gap-5 xl:grid-cols-4">
                       {catItems.map((item) => {
-                        const plainQty = getPlainLineQty(item.id);
-                        const totalQty = getCartQuantity(item.id);
+                        // 购物车数量只在 ONLINE_ORDERING_ENABLED 分支内现取：若在此处声明成变量，
+                        // 开关为 false 时生产压缩会把它改写成「先赋值后 let」，整页 500（2026-10）
                         const itemHasOptions = hasOptions(item);
                         const itemName = getName(item);
                         const itemDesc = getDesc(item);
@@ -779,18 +779,18 @@ export default function PedidoContent({ categories, items, setMeals, initialMeal
                                         <path d="M8 3v10M3 8h10" />
                                       </svg>
                                       {t("add")}
-                                      {totalQty > 0 && (
-                                        <span className="ml-1 px-1.5 py-0.5 bg-white/20 text-[10px]">×{totalQty}</span>
+                                      {getCartQuantity(item.id) > 0 && (
+                                        <span className="ml-1 px-1.5 py-0.5 bg-white/20 text-[10px]">×{getCartQuantity(item.id)}</span>
                                       )}
                                     </button>
-                                  ) : plainQty > 0 ? (
+                                  ) : getPlainLineQty(item.id) > 0 ? (
                                     <div className="flex items-center justify-between border border-beige lg:w-full">
                                       <button
                                         onClick={() => decrementPlainItem(item.id)}
                                         aria-label="decrease quantity"
                                         className="w-9 h-9 lg:w-10 lg:h-9 text-maroon font-body text-base flex items-center justify-center cursor-pointer transition-colors hover:bg-beige/50 bg-transparent border-none"
                                       >−</button>
-                                      <span className="font-body text-[14px] text-maroon font-medium px-2 min-w-[1.5rem] text-center">{plainQty}</span>
+                                      <span className="font-body text-[14px] text-maroon font-medium px-2 min-w-[1.5rem] text-center">{getPlainLineQty(item.id)}</span>
                                       <button
                                         onClick={() => addToCart(item)}
                                         aria-label="increase quantity"
