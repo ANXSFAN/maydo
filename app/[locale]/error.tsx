@@ -53,6 +53,13 @@ export default function ErrorPage({
             {t("backHome")}
           </Link>
         </div>
+
+        {/* 错误编号：对应 Vercel Runtime Logs 里的 digest，便于排查 */}
+        {error.digest && (
+          <p className="font-body text-[11px] text-white/30 tracking-wider mt-8 relative z-10">
+            ref: {error.digest}
+          </p>
+        )}
       </div>
     </section>
   );

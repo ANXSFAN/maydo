@@ -1,6 +1,6 @@
 import { orderlix, TENANT_ID } from "./orderlix";
 import type { MenuCategoryData, MenuItemData, MenuData, SetMealData } from "./menu-types";
-import { normalizeSetMealCourses } from "./menu-types";
+import { normalizeSetMealCourses, toImageUrl, toLocalizedRecord, toStringList } from "./menu-types";
 
 // Re-export types for server-side consumers
 export type { MenuCategoryData, MenuItemData, MenuData, SetMealData };
@@ -39,25 +39,29 @@ export async function getMenuData(): Promise<MenuData> {
 
   const categories: MenuCategoryData[] = (catResult.data ?? []).map(
     (c: Record<string, unknown>) => ({
-      id: c.id as string,
-      name: c.name as Record<string, string>,
-      imageUrl: c.image_url as string | null,
-      sortOrder: c.sort_order as number,
-      station: c.station as string,
+      id: String(c.id),
+      name: toLocalizedRecord(c.name),
+      imageUrl: toImageUrl(c.image_url),
+      sortOrder: Number(c.sort_order) || 0,
+      station: typeof c.station === "string" ? c.station : "",
     })
   );
 
   const items: MenuItemData[] = (itemResult.data ?? []).map(
-    (i: Record<string, unknown>) => ({
-      id: i.id as string,
-      categoryId: i.category_id as string,
-      name: i.name as Record<string, string>,
-      description: i.description as Record<string, string> | null,
-      price: Number(i.price),
-      imageUrl: i.image_url as string | null,
-      allergens: (i.allergens as string[]) ?? [],
-      options: i.options,
-    })
+    (i: Record<string, unknown>) => {
+      const description = toLocalizedRecord(i.description);
+      const price = Number(i.price);
+      return {
+        id: String(i.id),
+        categoryId: String(i.category_id),
+        name: toLocalizedRecord(i.name),
+        description: Object.keys(description).length > 0 ? description : null,
+        price: Number.isFinite(price) ? price : 0,
+        imageUrl: toImageUrl(i.image_url),
+        allergens: toStringList(i.allergens),
+        options: Array.isArray(i.options) ? i.options : null,
+      };
+    }
   );
 
   const setMeals: SetMealData[] = (setMealResult.data ?? []).map(
